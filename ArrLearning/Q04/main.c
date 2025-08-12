@@ -1,4 +1,4 @@
-// Declare another integer array of 10 elements and copy into it the array from question 3
+// 4. Declare another integer array of 10 elements and copy into it the array from question 3
 #include <stdio.h>
 
 int main() {

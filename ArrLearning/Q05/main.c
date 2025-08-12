@@ -1,4 +1,4 @@
-// Define two arrays of 5 real (float) elements, input values for both arrays. Then swap the contents of the two arrays.
+// 5. Define two arrays of 5 real (float) elements, input values for both arrays. Then swap the contents of the two arrays.
 #include <stdio.h>
 
 int main() {

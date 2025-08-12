@@ -1,4 +1,4 @@
-// Write a program that receives grades for 25 students and prints:
+// 9. Write a program that receives grades for 25 students and prints:
 // a. The average grade
 // b. How many students failed (below 55)
 // c. The highest grade and how many students received it

@@ -1,4 +1,4 @@
-// Define an array of 5 real (float) elements and assign to it the sum of each pair of corresponding elements from the arrays in the previous question.
+// 6. Define an array of 5 real (float) elements and assign to it the sum of each pair of corresponding elements from the arrays in the previous question.
 #include <stdio.h>
 
 int main() {

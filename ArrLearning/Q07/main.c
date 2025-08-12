@@ -1,4 +1,4 @@
-// Define an array of 8 elements to receive the salaries of 8 employees and print the highest and lowest salary.
+// 7. Define an array of 8 elements to receive the salaries of 8 employees and print the highest and lowest salary.
 // If the highest/lowest number appears more than once - indicate that.
 #include <stdio.h>
 int main() {

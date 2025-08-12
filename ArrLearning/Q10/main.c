@@ -1,6 +1,6 @@
-// Define an integer array with 10 elements and initialize it as you wish. Write a program that sorts the array from smallest to largest.
+// 10. Define an integer array with 10 elements and initialize it as you wish. 
+// Write a program that sorts the array from smallest to largest.
 #include <stdio.h>
-
 
 int arr[10] = {5, 2, 9, 1, 7, 4, 6, 3, 8, 0};
 

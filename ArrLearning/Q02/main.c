@@ -1,4 +1,4 @@
-// Define an array of 10 integers and use a loop to insert numbers from 1 to 10 in ascending order.
+// 2. Define an array of 10 integers and use a loop to insert numbers from 1 to 10 in ascending order.
 #include <stdio.h>
 
 int main() {

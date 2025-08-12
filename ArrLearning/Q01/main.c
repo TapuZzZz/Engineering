@@ -1,4 +1,4 @@
-// Write a program that defines an array of 5 integers and inputs data into it
+// 1. Write a program that defines an array of 5 integers and inputs data into it
 #include <stdio.h>
 
 int main() {
