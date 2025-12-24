@@ -15,7 +15,6 @@ int Isempty_LLL(Node *head) {
 }
 
 void Push_LLL(Node **head, int value) {
-
     Node *newNode = (Node *)malloc(sizeof(Node));
     if (newNode == NULL) {
         perror("Error: Memory allocation failed in Push_LLL");
@@ -28,7 +27,6 @@ void Push_LLL(Node **head, int value) {
 }
 
 void Insert_after_LLL(Node *prevNode, int value) {
-
     Node *newNode = (Node *)malloc(sizeof(Node));
     if (newNode == NULL) {
         perror("Error: Memory allocation failed in Insert_after_LLL");
@@ -41,10 +39,9 @@ void Insert_after_LLL(Node *prevNode, int value) {
 }
 
 int Pop_LLL(Node **head) {
-
     Node *temp = *head;
-
     int poppedValue = temp->data;
+    
     *head = (*head)->next;
     free(temp);
 
@@ -52,9 +49,7 @@ int Pop_LLL(Node **head) {
 }
 
 int Delete_after_LLL(Node *prevNode) {
-
     Node *nodeToDelete = prevNode->next;
-
     int deletedValue = nodeToDelete->data;
     prevNode->next = nodeToDelete->next;
     free(nodeToDelete);
