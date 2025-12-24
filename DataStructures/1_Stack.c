@@ -38,5 +38,5 @@ void push(Stack **s,  sType  val) {
 }
 
 int main(void){
-    
+    return 0;
 }
