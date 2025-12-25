@@ -51,6 +51,7 @@ int Pop_LLL(Node **head) {
 int Delete_after_LLL(Node *prevNode) {
     Node *nodeToDelete = prevNode->next;
     int deletedValue = nodeToDelete->data;
+    
     prevNode->next = nodeToDelete->next;
     free(nodeToDelete);
 
