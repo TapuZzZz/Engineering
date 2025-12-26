@@ -22,7 +22,10 @@ void Push_DLLL(Node** manager, int value) {
     newNode->next = NULL;
     newNode->prev = NULL;
     *manager = newNode;
+<<<<<<< HEAD
 
+=======
+>>>>>>> Home
 }
 
 void InsertPre_DLLL(Node* node, int value){
@@ -43,16 +46,25 @@ void InsertNext_DLLL(){
     
 }
 
+<<<<<<< HEAD
 
 int Pop_DLLL(){
 
 }
 
+=======
+int Pop_DLLL(Node* head) {
+    
+}
+>>>>>>> Home
 int Delete_DLLL(){
 
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> Home
 int main() {
 
     return 0;
