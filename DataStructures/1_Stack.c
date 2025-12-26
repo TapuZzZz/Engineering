@@ -1,42 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int sType;
-
-typedef struct{
-    struct Stack* nextItem;
-    sType value;
+typedef struct Stack {
+    int data;
+    struct Stack* next;
 } Stack;
 
-Stack* iniStack() {
-    Stack* s = NULL;
-    return s;
+void iniStack(Stack** stack) {
+    *stack = NULL;
 }
 
-unsigned short isEmpty(Stack *s) {
-    return s == NULL;
+unsigned short isEmpty(Stack* stack) {
+    return stack == NULL;
 }
 
-unsigned short pop(Stack **s) {
-    sType headVal = (*s)->value;
-    *s = (*s)->nextItem;
-    return headVal;
+void push(Stack** stack, int data) {
+    Stack* newNode = (Stack*)malloc(sizeof(Stack));
+
+    newNode->data = data;
+    newNode->next = *stack;
+    *stack = newNode;
 }
 
-void push(Stack **s,  sType  val) {
-    if (!isEmpty(*s)) {
-        Stack* NI = (Stack*)malloc(sizeof(Stack));
-        NI->value = val;
-        NI->nextItem = *s;
-        *s = NI;
-    } else {
-        Stack* firstItem = (Stack*)malloc(sizeof(Stack));
-        firstItem->value = val;
-        firstItem->nextItem = NULL;
-        *s = firstItem;
-    }
+int pop(Stack** stack) {
+    Stack* temp = *stack;
+    int poppedValue = temp->data;
+    
+    *stack = (*stack)->next;
+    free(temp);
+
+    return poppedValue;
 }
 
-int main(void){
+int main(void) {
+    
     return 0;
 }

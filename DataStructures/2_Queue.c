@@ -1,38 +1,57 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-#define MAX 100
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
 
 typedef struct {
-    int data[MAX];
-    int front;
-    int rear;
+    Node* front;
+    Node* rear;
     int size;
 } Queue;
 
-void Init_queue(Queue *q) {
-    q->front = 0;
-    q->rear = 0;
-    q->size = 0;
+void Init_queue(Queue* queue) {
+    queue->front = NULL;
+    queue->rear = NULL;
+    queue->size = 0;
 }
 
-int Is_Queue_Empty(Queue *q) {
-    return (q->size == 0);
+int Is_Empty(Queue* queue) {
+    return queue->size == 0;
 }
 
-void Insert_queue(Queue *q, int value) {
-    q->data[q->rear] = value;
-    q->rear = (q->rear + 1) % MAX;
-    q->size++;
+void Insert_queue(Queue* queue, int value) {
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = value;
+    newNode->next = NULL;
+
+    if (Is_Empty(queue)) {
+        queue->front = newNode;
+        queue->rear = newNode;
+    } else {
+        queue->rear->next = newNode;
+        queue->rear = newNode;
+    }
+
+    queue->size++;
 }
 
-void Remove_queue(Queue *q, int *value) {
-    *value = q->data[q->front];
-    q->front = (q->front + 1) % MAX;
+
+int Remove_queue(Queue *q) {
+    Node* temp = q->front;
+    int value = temp->data;
+
+    q->front = q->front->next;
+
+    if (q->front == NULL) {
+        q->rear = NULL;
+    }
+
+    free(temp);
     q->size--;
 
+    return value;
 }
 
-int main(void) {
-
-    return 0;
-}
