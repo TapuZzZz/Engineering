@@ -39,16 +39,21 @@ void InsertPre_DLLL(Node* node, int value){
     node->prev = newNode;
 }
 
-//void InsertNext_DLLL(){
+void InsertNext_DLLL(){
     
-//}
+}
+
+
+int Pop_DLLL(){
+
+}
+
+int Delete_DLLL(){
+
+}
 
 
 int main() {
-    Node* manager;
-    Push_DLLL(&manager, 4);
-
-    printf("%d\n", manager->data);
 
     return 0;
 }
