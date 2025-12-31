@@ -11,7 +11,7 @@ void Init_CDLLL(Node **manager) {
     *manager = NULL;
 }
 
-void InsertLast_CDLLL(Node **manager, int data){
+void InsertFirst_CDLLL(Node **manager, int data){
     Node* newNode = (Node*)malloc(sizeof(Node));
     newNode->data = data;
     newNode->next = newNode;
@@ -22,48 +22,67 @@ void InsertLast_CDLLL(Node **manager, int data){
 void InsertEnd_CDLLL(Node **manager, int data){
     Node* newNode = (Node*)malloc(sizeof(Node));
     newNode->data = data;
-    newNode->next = (*manager)->next;
-    newNode->prev = manager;
-    manager = newNode;
-}
-
-void InsertPre_DLLL(){
     
-}
+    Node* head = (*manager);
+    Node* tail = head->prev;
 
-void InsertNext_DLLL(){
+    newNode->next = head;
+    newNode->prev = tail;
+    tail->next = newNode;
+    head->prev = newNode;
     
+    *manager = newNode; 
 }
 
-int Delete_DLLL(Node* nodeToDelete){
+void InsertPre_CDLLL(Node* targetNode, int data){
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    
+    newNode->next = targetNode;
+    newNode->prev = targetNode->prev;
+    
+    targetNode->prev->next = newNode;
+    targetNode->prev = newNode;
+}
+
+void InsertNext_CDLLL(Node* targetNode, int data){
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    newNode->data = data;
+    
+    newNode->next = targetNode->next;
+    newNode->prev = targetNode;
+    
+    targetNode->next->prev = newNode;
+    targetNode->next = newNode;
+}
+
+int Delete_CDLLL(Node* nodeToDelete){
     int deletedValue = nodeToDelete->data;
 
     nodeToDelete->prev->next = nodeToDelete->next;
     nodeToDelete->next->prev = nodeToDelete->prev;
+    
     free(nodeToDelete);
+    return deletedValue;
+}
+
+int DeleteEnd_CDLLL(Node **manager){
+    Node* toDelete = *manager;
+    int deletedValue = toDelete->data;
+
+    toDelete->prev->next = toDelete->next;
+    toDelete->next->prev = toDelete->prev;
+    
+    *manager = toDelete->prev;
+    free(toDelete);
 
     return deletedValue;
 }
 
-int DeleteEnd_DLLL(Node* manager){
-    int deletedValue = manager->data;
-
-    manager->prev->next = manager->next;
-    manager->next->prev = manager->prev;
-    Node* nodeToDelete = manager;
-    manager = manager->prev;
-    free(nodeToDelete);
-
-    return deletedValue;
-
-}
-
-int DeleteLast_DLLL(Node* manager){
-    int deletedValue = manager->data;
-
-    free(manager);
-    manager = NULL;
-
+int DeleteLastOne_CDLLL(Node **manager){
+    int deletedValue = (*manager)->data;
+    free(*manager);
+    *manager = NULL;
     return deletedValue;
 }
 
