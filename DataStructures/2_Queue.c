@@ -3,12 +3,12 @@
 
 typedef struct QueueNode {
     int data;
-    QueueNode* next;
+    struct QueueNode* next;
 } QueueNode;
 
-typedef struct {
-    QueueNode* front;
-    QueueNode* rear;
+typedef struct Queue {
+    struct QueueNode* front;
+    struct QueueNode* rear;
     int size;
 } Queue;
 
@@ -22,34 +22,44 @@ int Is_Empty(Queue* queue) {
     return queue->size == 0;
 }
 
-void Insert_queue(Queue* queue, int value) {
+void Push_Queue(Queue* queue, int value) {
     QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
     newQueueNode->data = value;
     newQueueNode->next = NULL;
 
-    if (Is_Empty(queue)) {
-        queue->front = newQueueNode;
-        queue->rear = newQueueNode;
-    } else {
-        queue->rear->next = newQueueNode;
-        queue->rear = newQueueNode;
-    }
+    
+    
+    queue->size++;
+}
+
+void Insert_Queue(Queue* queue, int value) {
+    QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
+    newQueueNode->data = value;
+    newQueueNode->next = NULL;
 
     queue->size++;
 }
 
-int Remove_queue(Queue *q) {
-    QueueNode* temp = q->front;
+int Pop_Queue(Queue* queue) {
+    QueueNode* temp = queue->front;
     int value = temp->data;
 
-    q->front = q->front->next;
-
-    if (q->front == NULL) {
-        q->rear = NULL;
-    }
+    queue->front = queue->front->next;
 
     free(temp);
-    q->size--;
+    queue->size--;
+
+    return value;
+}
+
+int Remove_Queue(Queue* queue) {
+    QueueNode* temp = queue->front;
+    int value = temp->data;
+
+    queue->front = queue->front->next;
+
+    free(temp);
+    queue->size--;
 
     return value;
 }
