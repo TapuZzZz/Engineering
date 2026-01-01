@@ -43,8 +43,6 @@ void Set_Right(BinNode* parentNode, int data){
 
 
 int main(void){
-    BinNode* rootPtr;
-    Init_Tree(&rootPtr);
 
     return 0;
 }
