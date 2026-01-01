@@ -33,18 +33,6 @@ int pop(StackNode** stack) {
 }
 
 int main(void) {
-    StackNode* myStack;
-    iniStack(&myStack);
-
-    // יצירת 4 חוליות
-    push(&myStack, 10);
-    push(&myStack, 20);
-    push(&myStack, 30);
-    push(&myStack, 40);
-
-    // ביצוע POP פעמיים והדפסת הערכים
-    printf("Popped value 1: %d\n", pop(&myStack));
-    printf("Popped value 2: %d\n", pop(&myStack));
 
     return 0;
 }
