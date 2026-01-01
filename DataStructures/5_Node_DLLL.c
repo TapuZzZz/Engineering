@@ -1,18 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct DLLLNode {
     int data;
-    struct Node* next; 
-    struct Node* prev; 
-} Node;
+    struct DLLLNode* next; 
+    struct DLLLNode* prev; 
+} DLLLNode;
 
-void Init_DLLL(Node** manager) {
+void Init_DLLL(DLLLNode** manager) {
     *manager = NULL;
 }
 
-void Push_DLLL(Node** manager, int value) {
-    Node* newNode = (Node *)malloc(sizeof(Node));
+void Push_DLLL(DLLLNode** manager, int value) {
+    DLLLNode* newNode = (DLLLNode *)malloc(sizeof(DLLLNode));
     if (!newNode) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
@@ -24,8 +24,8 @@ void Push_DLLL(Node** manager, int value) {
     *manager = newNode;
 }
 
-void InsertPre_DLLL(Node* node, int value){
-    Node *newNode = (Node *)malloc(sizeof(Node));
+void InsertPre_DLLL(DLLLNode* node, int value){
+    DLLLNode *newNode = (DLLLNode *)malloc(sizeof(DLLLNode));
     if (!newNode) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);

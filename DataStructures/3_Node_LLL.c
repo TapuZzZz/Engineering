@@ -1,45 +1,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct LLLNode {
     int data;          
-    struct Node* next; 
-} Node;
+    struct LLLNode* next; 
+} LLLNode;
 
-void Init_LLL(Node **head) { 
+void Init_LLL(LLLNode **head) { 
     *head = NULL; 
 }
 
-int Isempty_LLL(Node *head) {
+int Isempty_LLL(LLLNode *head) {
     return (head == NULL);
 }
 
-void Push_LLL(Node **head, int value) {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    if (newNode == NULL) {
+void Push_LLL(LLLNode **head, int value) {
+    LLLNode *newLLLNode = (LLLNode *)malloc(sizeof(LLLNode));
+    if (newLLLNode == NULL) {
         perror("Error: Memory allocation failed in Push_LLL");
         exit(EXIT_FAILURE); 
     }
 
-    newNode->data = value;
-    newNode->next = *head;
-    *head = newNode;
+    newLLLNode->data = value;
+    newLLLNode->next = *head;
+    *head = newLLLNode;
 }
 
-void Insert_after_LLL(Node *prevNode, int value) {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    if (newNode == NULL) {
+void Insert_after_LLL(LLLNode *prevLLLNode, int value) {
+    LLLNode *newLLLNode = (LLLNode *)malloc(sizeof(LLLNode));
+    if (newLLLNode == NULL) {
         perror("Error: Memory allocation failed in Insert_after_LLL");
         exit(EXIT_FAILURE);
     }
 
-    newNode->data = value;
-    newNode->next = prevNode->next;
-    prevNode->next = newNode;
+    newLLLNode->data = value;
+    newLLLNode->next = prevLLLNode->next;
+    prevLLLNode->next = newLLLNode;
 }
 
-int Pop_LLL(Node **head) {
-    Node *temp = *head;
+int Pop_LLL(LLLNode **head) {
+    LLLNode *temp = *head;
     int poppedValue = temp->data;
     
     *head = (*head)->next;
@@ -48,12 +48,12 @@ int Pop_LLL(Node **head) {
     return poppedValue;
 }
 
-int Delete_after_LLL(Node *prevNode) {
-    Node *nodeToDelete = prevNode->next;
-    int deletedValue = nodeToDelete->data;
+int Delete_after_LLL(LLLNode *prevLLLNode) {
+    LLLNode *LLLnodeToDelete = prevLLLNode->next;
+    int deletedValue = LLLnodeToDelete->data;
     
-    prevNode->next = nodeToDelete->next;
-    free(nodeToDelete);
+    prevLLLNode->next = LLLnodeToDelete->next;
+    free(LLLnodeToDelete);
 
     return deletedValue;
 }

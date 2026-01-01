@@ -1,45 +1,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct CLLLNode {
     int data;
-    struct Node* next;
-} Node;
+    struct CLLLNode* next;
+} CLLLNode;
 
-void Init_CLLL(Node **last) {
+void Init_CLLL(CLLLNode **last) {
     *last = NULL;
 }
 
-int Isempty_CLLL(Node *last) {
+int Isempty_CLLL(CLLLNode *last) {
     return (last == NULL);
 }
 
-void Push_CLLL(Node **last, int value) {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    if (!newNode) {
+void Push_CLLL(CLLLNode **last, int value) {
+    CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
+    if (!newCLLLNode) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
-    newNode->data = value;
-    newNode->next = (*last)->next;
-    (*last)->next = newNode;
+    newCLLLNode->data = value;
+    newCLLLNode->next = (*last)->next;
+    (*last)->next = newCLLLNode;
 }
 
-void Insert_after_CLLL(Node **last, Node *prevNode, int value) {
-    Node *newNode = (Node *)malloc(sizeof(Node));
-    if (!newNode) {
+void Insert_after_CLLL(CLLLNode **last, CLLLNode *prevCLLLNode, int value) {
+    CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
+    if (!newCLLLNode) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
-    newNode->data = value;
-    newNode->next = prevNode->next;
-    prevNode->next = newNode;
+    newCLLLNode->data = value;
+    newCLLLNode->next = prevCLLLNode->next;
+    prevCLLLNode->next = newCLLLNode;
 }
 
-int PopCLLL(Node **last) {
-    Node *head = (*last)->next;
+int PopCLLL(CLLLNode **last) {
+    CLLLNode *head = (*last)->next;
     int poppedValue = head->data;
     
     (*last)->next = head->next;
@@ -48,20 +48,20 @@ int PopCLLL(Node **last) {
     return poppedValue;
 }
 
-int Delete_afterCLLL(Node **last, Node *prevNode) {
-    Node *nodeToDelete = prevNode->next;
-    int deletedValue = nodeToDelete->data;
+int Delete_afterCLLL(CLLLNode **last, CLLLNode *prevCLLLNode) {
+    CLLLNode *CLLLnodeToDelete = prevCLLLNode->next;
+    int deletedValue = CLLLnodeToDelete->data;
 
-    if (nodeToDelete == *last) {
-        *last = prevNode;
+    if (CLLLnodeToDelete == *last) {
+        *last = prevCLLLNode;
     }
 
-    if (nodeToDelete == prevNode) {
+    if (CLLLnodeToDelete == prevCLLLNode) {
         *last = NULL;
     } else {
-        prevNode->next = nodeToDelete->next;
+        prevCLLLNode->next = CLLLnodeToDelete->next;
     }
-    free(nodeToDelete);
+    free(CLLLnodeToDelete);
 
     return deletedValue;
 }

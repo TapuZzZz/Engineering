@@ -1,30 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct CDLLLNode {
     int data;
-    struct Node* next; 
-    struct Node* prev; 
-} Node;
+    struct CDLLLNode* next; 
+    struct CDLLLNode* prev; 
+} CDLLLNode;
 
-void Init_CDLLL(Node **manager) {
+void Init_CDLLL(CDLLLNode **manager) {
     *manager = NULL;
 }
 
-void InsertFirst_CDLLL(Node **manager, int data){
-    Node* newNode = (Node*)malloc(sizeof(Node));
+void InsertFirst_CDLLL(CDLLLNode **manager, int data){
+    CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     newNode->next = newNode;
     newNode->prev = newNode;
     *manager = newNode;
 }
 
-void InsertEnd_CDLLL(Node **manager, int data){
-    Node* newNode = (Node*)malloc(sizeof(Node));
+void InsertEnd_CDLLL(CDLLLNode **manager, int data){
+    CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     
-    Node* head = (*manager);
-    Node* tail = head->prev;
+    CDLLLNode* head = (*manager);
+    CDLLLNode* tail = head->prev;
 
     newNode->next = head;
     newNode->prev = tail;
@@ -34,8 +34,8 @@ void InsertEnd_CDLLL(Node **manager, int data){
     *manager = newNode; 
 }
 
-void InsertPre_CDLLL(Node* targetNode, int data){
-    Node* newNode = (Node*)malloc(sizeof(Node));
+void InsertPre_CDLLL(CDLLLNode* targetNode, int data){
+    CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     
     newNode->next = targetNode;
@@ -45,8 +45,8 @@ void InsertPre_CDLLL(Node* targetNode, int data){
     targetNode->prev = newNode;
 }
 
-void InsertNext_CDLLL(Node* targetNode, int data){
-    Node* newNode = (Node*)malloc(sizeof(Node));
+void InsertNext_CDLLL(CDLLLNode* targetNode, int data){
+    CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     
     newNode->next = targetNode->next;
@@ -56,7 +56,7 @@ void InsertNext_CDLLL(Node* targetNode, int data){
     targetNode->next = newNode;
 }
 
-int Delete_CDLLL(Node* nodeToDelete){
+int Delete_CDLLL(CDLLLNode* nodeToDelete){
     int deletedValue = nodeToDelete->data;
 
     nodeToDelete->prev->next = nodeToDelete->next;
@@ -66,8 +66,8 @@ int Delete_CDLLL(Node* nodeToDelete){
     return deletedValue;
 }
 
-int DeleteEnd_CDLLL(Node **manager){
-    Node* toDelete = *manager;
+int DeleteEnd_CDLLL(CDLLLNode **manager){
+    CDLLLNode* toDelete = *manager;
     int deletedValue = toDelete->data;
 
     toDelete->prev->next = toDelete->next;
@@ -79,7 +79,7 @@ int DeleteEnd_CDLLL(Node **manager){
     return deletedValue;
 }
 
-int DeleteLastOne_CDLLL(Node **manager){
+int DeleteLastOne_CDLLL(CDLLLNode **manager){
     int deletedValue = (*manager)->data;
     free(*manager);
     *manager = NULL;

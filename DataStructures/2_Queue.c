@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Node {
+typedef struct QueueNode {
     int data;
-    struct Node* next;
-} Node;
+    struct QueueNode* next;
+} QueueNode;
 
 typedef struct {
-    Node* front;
-    Node* rear;
+    QueueNode* front;
+    QueueNode* rear;
     int size;
 } Queue;
 
@@ -23,24 +23,23 @@ int Is_Empty(Queue* queue) {
 }
 
 void Insert_queue(Queue* queue, int value) {
-    Node* newNode = (Node*)malloc(sizeof(Node));
-    newNode->data = value;
-    newNode->next = NULL;
+    QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
+    newQueueNode->data = value;
+    newQueueNode->next = NULL;
 
     if (Is_Empty(queue)) {
-        queue->front = newNode;
-        queue->rear = newNode;
+        queue->front = newQueueNode;
+        queue->rear = newQueueNode;
     } else {
-        queue->rear->next = newNode;
-        queue->rear = newNode;
+        queue->rear->next = newQueueNode;
+        queue->rear = newQueueNode;
     }
 
     queue->size++;
 }
 
-
 int Remove_queue(Queue *q) {
-    Node* temp = q->front;
+    QueueNode* temp = q->front;
     int value = temp->data;
 
     q->front = q->front->next;
@@ -55,3 +54,7 @@ int Remove_queue(Queue *q) {
     return value;
 }
 
+int main(void) {
+
+    return 0;
+}
