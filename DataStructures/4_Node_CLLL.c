@@ -3,19 +3,19 @@
 
 typedef struct CLLLNode {
     int data;
-    struct CLLLNode* next;
+    CLLLNode* next;
 } CLLLNode;
 
-void Init_CLLL(CLLLNode **last) {
+void Init_CLLL(CLLLNode** last) {
     *last = NULL;
 }
 
-int Isempty_CLLL(CLLLNode *last) {
+int Isempty_CLLL(CLLLNode* last) {
     return (last == NULL);
 }
 
-void Push_CLLL(CLLLNode **last, int value) {
-    CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
+void Push_CLLL(CLLLNode** last, int value) {
+    CLLLNode* newCLLLNode = (CLLLNode*)malloc(sizeof(CLLLNode));
     if (!newCLLLNode) {
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
@@ -26,7 +26,7 @@ void Push_CLLL(CLLLNode **last, int value) {
     (*last)->next = newCLLLNode;
 }
 
-void Insert_after_CLLL(CLLLNode **last, CLLLNode *prevCLLLNode, int value) {
+void Insert_after_CLLL(CLLLNode** last, CLLLNode* prevCLLLNode, int value) {
     CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
     if (!newCLLLNode) {
         perror("Memory allocation failed");
@@ -38,8 +38,8 @@ void Insert_after_CLLL(CLLLNode **last, CLLLNode *prevCLLLNode, int value) {
     prevCLLLNode->next = newCLLLNode;
 }
 
-int PopCLLL(CLLLNode **last) {
-    CLLLNode *head = (*last)->next;
+int PopCLLL(CLLLNode** last) {
+    CLLLNode* head = (*last)->next;
     int poppedValue = head->data;
     
     (*last)->next = head->next;
@@ -48,8 +48,8 @@ int PopCLLL(CLLLNode **last) {
     return poppedValue;
 }
 
-int Delete_afterCLLL(CLLLNode **last, CLLLNode *prevCLLLNode) {
-    CLLLNode *CLLLnodeToDelete = prevCLLLNode->next;
+int Delete_afterCLLL(CLLLNode** last, CLLLNode* prevCLLLNode) {
+    CLLLNode* CLLLnodeToDelete = prevCLLLNode->next;
     int deletedValue = CLLLnodeToDelete->data;
 
     if (CLLLnodeToDelete == *last) {

@@ -3,7 +3,7 @@
 
 typedef struct QueueNode {
     int data;
-    struct QueueNode* next;
+    QueueNode* next;
 } QueueNode;
 
 typedef struct {

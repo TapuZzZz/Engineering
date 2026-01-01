@@ -7,9 +7,26 @@ typedef struct BinNode {
     BinNode* left;
 } BinNode;
 
+void Init_Tree(BinNode** root) {
+    *root = NULL;
+}
+
+void Make_Tree(BinNode** root, int data){
+    BinNode* newNode = (BinNode*)(malloc(sizeof(BinNode)));
+
+    newNode->data = data;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    
+    *root = newNode; 
+}
 
 
 int main(void){
+    BinNode* rootPtr;
+    Init_Tree(&rootPtr);
+    
+
 
     return 0;
 }

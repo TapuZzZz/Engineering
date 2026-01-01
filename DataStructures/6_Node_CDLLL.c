@@ -3,15 +3,15 @@
 
 typedef struct CDLLLNode {
     int data;
-    struct CDLLLNode* next; 
-    struct CDLLLNode* prev; 
+    CDLLLNode* next; 
+    CDLLLNode* prev; 
 } CDLLLNode;
 
-void Init_CDLLL(CDLLLNode **manager) {
+void Init_CDLLL(CDLLLNode** manager) {
     *manager = NULL;
 }
 
-void InsertFirst_CDLLL(CDLLLNode **manager, int data){
+void InsertFirst_CDLLL(CDLLLNode** manager, int data){
     CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     newNode->next = newNode;
@@ -19,7 +19,7 @@ void InsertFirst_CDLLL(CDLLLNode **manager, int data){
     *manager = newNode;
 }
 
-void InsertEnd_CDLLL(CDLLLNode **manager, int data){
+void InsertEnd_CDLLL(CDLLLNode** manager, int data){
     CDLLLNode* newNode = (CDLLLNode*)malloc(sizeof(CDLLLNode));
     newNode->data = data;
     
@@ -79,7 +79,7 @@ int DeleteEnd_CDLLL(CDLLLNode **manager){
     return deletedValue;
 }
 
-int DeleteLastOne_CDLLL(CDLLLNode **manager){
+int DeleteLastOne_CDLLL(CDLLLNode** manager){
     int deletedValue = (*manager)->data;
     free(*manager);
     *manager = NULL;

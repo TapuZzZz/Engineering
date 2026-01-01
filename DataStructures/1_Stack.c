@@ -3,7 +3,7 @@
 
 typedef struct StackNode {
     int data;
-    struct StackNode* next;
+    StackNode* next;
 } StackNode;
 
 void iniStack(StackNode** stack) {

@@ -3,8 +3,8 @@
 
 typedef struct DLLLNode {
     int data;
-    struct DLLLNode* next; 
-    struct DLLLNode* prev; 
+    DLLLNode* next; 
+    DLLLNode* prev; 
 } DLLLNode;
 
 void Init_DLLL(DLLLNode** manager) {
