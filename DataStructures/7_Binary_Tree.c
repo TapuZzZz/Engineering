@@ -41,8 +41,7 @@ void Set_Right(BinNode* parentNode, int data){
     parentNode->right = newNode; 
 }
 
-
-int main(void){
+int main(void) {
 
     return 0;
 }
