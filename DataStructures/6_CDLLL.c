@@ -7,6 +7,7 @@ typedef struct CDLLLNode {
     CDLLLNode* prev; 
 } CDLLLNode;
 
+
 void Init_CDLLL(CDLLLNode** manager) {
     *manager = NULL;
 }

@@ -1,5 +1,5 @@
-#ifndef BT_H
-#define BT_H
+#ifndef BST_H
+#define BST_H
 
 typedef struct BinNode {
     int data;

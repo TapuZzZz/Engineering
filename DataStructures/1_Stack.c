@@ -6,6 +6,7 @@ typedef struct StackNode {
     StackNode* next;
 } StackNode;
 
+
 void iniStack(StackNode** stack) {
     *stack = NULL;
 }

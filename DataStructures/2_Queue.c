@@ -6,11 +6,13 @@ typedef struct QueueNode {
     struct QueueNode* next;
 } QueueNode;
 
+
 typedef struct Queue {
     struct QueueNode* front;
     struct QueueNode* rear;
     int size;
 } Queue;
+
 
 void Init_queue(Queue* queue) {
     queue->front = NULL;

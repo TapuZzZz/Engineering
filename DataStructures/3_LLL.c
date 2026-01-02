@@ -6,6 +6,7 @@ typedef struct LLLNode {
     struct LLLNode* next; 
 } LLLNode;
 
+
 void Init_LLL(LLLNode** head) { 
     *head = NULL; 
 }

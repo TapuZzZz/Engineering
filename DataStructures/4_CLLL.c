@@ -6,6 +6,7 @@ typedef struct CLLLNode {
     struct CLLLNode* next;
 } CLLLNode;
 
+
 void Init_CLLL(CLLLNode** last) {
     *last = NULL;
 }

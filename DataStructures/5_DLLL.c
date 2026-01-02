@@ -7,6 +7,7 @@ typedef struct DLLLNode {
     DLLLNode* prev; 
 } DLLLNode;
 
+
 void Init_DLLL(DLLLNode** manager) {
     *manager = NULL;
 }
