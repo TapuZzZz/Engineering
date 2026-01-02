@@ -51,7 +51,3 @@ int Delete_DLLL(){
 
 }
 
-int main() {
-
-    return 0;
-}

@@ -31,8 +31,3 @@ int pop(StackNode** stack) {
 
     return poppedValue;
 }
-
-int main(void) {
-
-    return 0;
-}

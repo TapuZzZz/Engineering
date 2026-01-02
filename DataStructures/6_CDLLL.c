@@ -85,8 +85,3 @@ int DeleteLastOne_CDLLL(CDLLLNode** manager){
     *manager = NULL;
     return deletedValue;
 }
-
-int main() {
-
-    return 0;
-}

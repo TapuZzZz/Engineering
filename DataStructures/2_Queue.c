@@ -28,7 +28,6 @@ void Push_Queue(Queue* queue, int value) {
     newQueueNode->next = NULL;
 
     
-    
     queue->size++;
 }
 
@@ -62,9 +61,4 @@ int Remove_Queue(Queue* queue) {
     queue->size--;
 
     return value;
-}
-
-int main(void) {
-
-    return 0;
 }

@@ -3,7 +3,7 @@
 
 typedef struct CLLLNode {
     int data;
-    CLLLNode* next;
+    struct CLLLNode* next;
 } CLLLNode;
 
 void Init_CLLL(CLLLNode** last) {
@@ -64,9 +64,4 @@ int Delete_afterCLLL(CLLLNode** last, CLLLNode* prevCLLLNode) {
     free(CLLLnodeToDelete);
 
     return deletedValue;
-}
-
-int main(void) {
-    
-    return 0;
 }

@@ -3,7 +3,7 @@
 
 typedef struct LLLNode {
     int data;          
-    LLLNode* next; 
+    struct LLLNode* next; 
 } LLLNode;
 
 void Init_LLL(LLLNode** head) { 
@@ -48,9 +48,4 @@ int Delete_after_LLL(LLLNode* prevLLLNode) {
     free(LLLnodeToDelete);
 
     return deletedValue;
-}
-
-int main(void) {
-    
-    return 0;
 }
