@@ -9,5 +9,10 @@ typedef struct ThreeNode {
 } ThreeNode;
 
 
+void Init_Tree(ThreeNode** root);
+void Make_Tree(ThreeNode** root, int data);
+void Set_Left(ThreeNode* parentNode, int data);
+void Set_Middle(ThreeNode* parentNode, int data);
+void Set_Right(ThreeNode* parentNode, int data);
 
-#endif 
+#endif
