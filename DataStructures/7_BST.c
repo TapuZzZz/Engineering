@@ -3,8 +3,8 @@
 
 typedef struct BinNode {
     int data;
-    struct BinNode* right;
     struct BinNode* left;
+    struct BinNode* right;
 } BinNode;
 
 
