@@ -12,4 +12,4 @@ unsigned short isEmpty(StackNode* stack);
 void push(StackNode** stack, int data);
 int pop(StackNode** stack);
 
-#endif 
+#endif

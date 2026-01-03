@@ -20,4 +20,4 @@ void Insert_Queue(Queue* queue, int value);
 int Pop_Queue(Queue* queue);
 int Remove_Queue(Queue* queue);
 
-#endif 
+#endif
