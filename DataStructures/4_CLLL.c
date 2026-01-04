@@ -17,10 +17,6 @@ int Isempty_CLLL(CLLLNode* last) {
 
 void Push_CLLL(CLLLNode** last, int value) {
     CLLLNode* newCLLLNode = (CLLLNode*)malloc(sizeof(CLLLNode));
-    if (!newCLLLNode) {
-        perror("Memory allocation failed");
-        exit(EXIT_FAILURE);
-    }
 
     newCLLLNode->data = value;
     newCLLLNode->next = (*last)->next;
@@ -29,10 +25,6 @@ void Push_CLLL(CLLLNode** last, int value) {
 
 void Insert_after_CLLL(CLLLNode** last, CLLLNode* prevCLLLNode, int value) {
     CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
-    if (!newCLLLNode) {
-        perror("Memory allocation failed");
-        exit(EXIT_FAILURE);
-    }
 
     newCLLLNode->data = value;
     newCLLLNode->next = prevCLLLNode->next;

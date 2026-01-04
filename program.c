@@ -21,7 +21,7 @@ int Task1(ThreeNode* root) {
 
 // T(n) = 2T(n/2) + O(1)
 // O(n)
-int Task2a(ThreeNode* root) {
+int Task2a(BinNode* root) {
     if (root == NULL) return 1;
 
     if (root->left && root->left->data >= root->data) return 0;
@@ -54,7 +54,7 @@ int Task2b(ThreeNode* root) {
 
 // T(n) = 2T(n/2) + O(1)
 // O(n)
-int Task3(ThreeNode* root1, ThreeNode* root2) {
+int Task3(BinNode* root1, BinNode* root2) {
     if (!root1 && !root2) return 1;
 
     if (root1 && !root2) return 0;
@@ -63,16 +63,25 @@ int Task3(ThreeNode* root1, ThreeNode* root2) {
     return Task3(root1->left, root2->left) && Task3(root1->right, root2->right);
 }
 
-// T(n) = 
+// T(n) = 2T(n/2) + O(1)
 // O(n)
-ThreeNode* Task4(ThreeNode** root) {
+BinNode* Task4(BinNode* root) {
     if (root == NULL) return NULL;
+
+    BinNode* newNode = (BinNode*)malloc(sizeof(BinNode));
+
+    newNode->data = root->data;
+
+    newNode->right = Task4(root->left);
+    newNode->left = Task4(root->right);
+
+    return newNode;
 }
 
-// T(n) = 
+// T(n) = 2T(n/2) + O(1)
 // O(n)
-ThreeNode* Task5(ThreeNode* root, ThreeNode* node) {
-    ThreeNode* temp = NULL;
+BinNode* Task5(BinNode* root, BinNode* node) {
+    BinNode* temp = NULL;
     
     if (root == NULL) return NULL;
 
@@ -85,11 +94,28 @@ ThreeNode* Task5(ThreeNode* root, ThreeNode* node) {
     return temp;
 }
 
-// T(n) = 
+// T(n) = 4T(n/4) + O(1)
 // O(n)
-int Task6(ThreeNode* root) {
-    if (root = NULL) return 0;
-    
+int Task6(BinNode* root) {
+    return (Task6CountNodes(root) / 2) > Task6CountLeafs(root);
+}
+
+// T(n) = 2T(n/2) + O(1)
+// O(n)
+int Task6CountLeafs(BinNode* root) {
+    if (root == NULL) return 0;
+    if (!root->left && !root->right)
+        return 1;
+
+    return Task6CountLeafs(root->left) + Task6CountLeafs(root->right);
+}
+
+// T(n) = 2T(n/2) + O(1)
+// O(n)
+int Task6CountNodes(BinNode* root) {
+    if (root == NULL) return 0;
+
+    return 1 + Task6CountNodes(root->left) + Task6CountNodes(root->right);
 }
 
 // T(n) = 
