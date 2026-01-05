@@ -118,12 +118,31 @@ int Task6CountNodes(BinNode* root) {
     return 1 + Task6CountNodes(root->left) + Task6CountNodes(root->right);
 }
 
-// T(n) = 
+// T(n) = 2T(n/2) + O(1)
 // O(n)
-int Task7(ThreeNode* root) {
+int Task7helper(BinNode* root) {
     if (root = NULL) return 0;
     
+    if (root->left && !root->right)
+        return 1 + Task7helper(root->left);
+    if (!root->left && root->right)
+        return -1 + Task7helper(root->right);
+
+    return Task7helper(root->left) + Task7helper(root->right);
 }
+
+int Task7a(BinNode* root) {
+    return Task7helper(root) < 0;
+}
+
+int Task7b(BinNode* root) {
+    return Task7helper(root) > 0;
+}
+
+int Task7c(BinNode* root) {
+    return Task7helper(root) == 0;
+}
+
 
 // T(n) = 
 // O(n)
