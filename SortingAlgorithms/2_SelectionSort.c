@@ -11,6 +11,8 @@
         - Best Case: O(n²)
         - Average Case: O(n²)
         - Worst Case: O(n²)
+
+    Space Complexity: O(1)
         
     Stability: Unstable
         Because it picks the minimum and swaps it over long distances, it can 
