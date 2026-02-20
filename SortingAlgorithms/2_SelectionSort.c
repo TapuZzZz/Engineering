@@ -1,7 +1,7 @@
 #include <stdio.h>
 /*
     Selection Sort Analysis:
-    
+    ────────────────────────────────────────────────────────────────────
     How it works:
         1. Scan the unsorted part of the array to find the index of the minimum element.
         2. Once the minimum is found, swap it with the first element of the unsorted part.
