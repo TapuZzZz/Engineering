@@ -15,8 +15,6 @@
     Space Complexity: O(1)
         
     Stability: Unstable
-        It performs swaps across multiple positions, which can change the relative 
-        order of equal elements.
 */
 void swap(int* a, int* b);
 

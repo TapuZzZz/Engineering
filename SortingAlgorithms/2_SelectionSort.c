@@ -15,8 +15,6 @@
     Space Complexity: O(1)
         
     Stability: Unstable
-        Because it picks the minimum and swaps it over long distances, it can 
-        jump over identical elements and change their original order.
 */
 void swap(int* a, int* b);
 
