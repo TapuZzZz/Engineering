@@ -4,22 +4,27 @@
     ────────────────────────────────────────────────────────────────────
     How it works:
         1. Scan the unsorted part of the array to find the index of the minimum
-   element.
+        element.
         2. Once the minimum is found, swap it with the first element of the
-   unsorted part.
+        unsorted part.
         3. This reduces the number of swaps to exactly one per outer loop
-   iteration.
+        iteration.
 
     Time Complexity:
-        - Best Case: O(n²)
+        - Best Case:    O(n²)
         - Average Case: O(n²)
-        - Worst Case: O(n²)
+        - Worst Case:   O(n²)
 
     Space Complexity: O(1)
 
     Stability: Unstable
 */
-void swap(int *a, int *b);
+
+static void swap(int *a, int *b) {
+  int temp = *a;
+  *a = *b;
+  *b = temp;
+}
 
 int main() {
   int arr[] = {9, 8, 7, 6, 5, 4, 3, 2, 1};
@@ -27,14 +32,11 @@ int main() {
 
   for (int i = 0; i < n - 1; i++) {
     int offset = i;
-    for (int j = i + 1; j < n; j++) {
-      if (arr[j] < arr[offset]) {
+    for (int j = i + 1; j < n; j++)
+      if (arr[j] < arr[offset])
         offset = j;
-      }
-    }
-    if (offset != i) {
+    if (offset != i)
       swap(&arr[i], &arr[offset]);
-    }
   }
 
   printf("Selection Sort Result: ");
@@ -43,10 +45,4 @@ int main() {
   printf("\n");
 
   return 0;
-}
-
-void swap(int *a, int *b) {
-  int temp = *a;
-  *a = *b;
-  *b = temp;
 }
