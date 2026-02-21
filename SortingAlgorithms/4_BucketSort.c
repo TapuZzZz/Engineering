@@ -4,60 +4,87 @@
     Bucket Sort Analysis:
     ────────────────────────────────────────────────────────────────────
     How it works:
-        1. Create n empty buckets.
-        2. Distribute each element into a bucket based on its value range.
-        3. Sort each individual bucket using insertion sort.
+        1. Divide the input range into n equally-sized buckets.
+        2. Scatter each element into its corresponding bucket.
+        3. Sort each bucket individually (Insertion Sort used here).
         4. Concatenate all buckets back into the original array.
+
     Time Complexity:
-        - Best Case:    O(n)   -> (When input is uniformly distributed)
-        - Average Case: O(n)
-        - Worst Case:   O(n²)  -> (When all elements land in one bucket)
-    Space Complexity: O(n)
-    Stability: Stable
+        - Best Case:    O(n + k)  (uniform distribution)
+        - Average Case: O(n + k)
+        - Worst Case:   O(n²)     (all elements fall into one bucket)
+          where k = number of buckets
+
+    Space Complexity: O(n + k)
+
+    Stability: Stable (when the per-bucket sort is stable)
+
+    Note: Works best when input is uniformly distributed over a
+          known range. Used here with integers; float version would
+          normalise values to [0, 1).
 */
+
+static void insertionSort(int *a, int len) {
+  for (int i = 1; i < len; i++) {
+    int key = a[i], j = i - 1;
+    while (j >= 0 && a[j] > key) {
+      a[j + 1] = a[j];
+      j--;
+    }
+    a[j + 1] = key;
+  }
+}
+
 int main() {
-    float arr[] = {0.78f, 0.17f, 0.39f, 0.26f, 0.72f, 0.94f, 0.21f, 0.12f, 0.68f, 0.55f};
-    int n = sizeof(arr) / sizeof(arr[0]);
+  int arr[] = {9, 3, 7, 1, 8, 2, 6, 4, 5};
+  int n = sizeof(arr) / sizeof(arr[0]);
 
-    // Step 1: Create n empty buckets
-    float **buckets   = (float **)calloc(n, sizeof(float *));
-    int   *bucketSize = (int *)calloc(n, sizeof(int));
-    for (int i = 0; i < n; i++)
-        buckets[i] = (float *)malloc(n * sizeof(float));
+  int min = arr[0], max = arr[0];
+  for (int i = 1; i < n; i++) {
+    if (arr[i] < min)
+      min = arr[i];
+    if (arr[i] > max)
+      max = arr[i];
+  }
 
-    // Step 2: Distribute elements into buckets
-    for (int i = 0; i < n; i++) {
-        int idx = (int)(arr[i] * n);
-        if (idx >= n) idx = n - 1;
-        buckets[idx][bucketSize[idx]++] = arr[i];
+  int **buckets = (int **)calloc(n, sizeof(int *));
+  int *counts = (int *)calloc(n, sizeof(int));
+  int *capacity = (int *)calloc(n, sizeof(int));
+
+  for (int i = 0; i < n; i++) {
+    capacity[i] = 4;
+    buckets[i] = (int *)malloc(capacity[i] * sizeof(int));
+  }
+
+  int range = max - min + 1;
+  for (int i = 0; i < n; i++) {
+    int idx = (int)((long long)(arr[i] - min) * n / range);
+    if (idx >= n)
+      idx = n - 1;
+
+    if (counts[idx] == capacity[idx]) {
+      capacity[idx] *= 2;
+      buckets[idx] = (int *)realloc(buckets[idx], capacity[idx] * sizeof(int));
     }
+    buckets[idx][counts[idx]++] = arr[i];
+  }
 
-    // Step 3: Sort each bucket using insertion sort
-    for (int i = 0; i < n; i++) {
-        for (int j = 1; j < bucketSize[i]; j++) {
-            float temp = buckets[i][j];
-            int k = j - 1;
-            while (k >= 0 && buckets[i][k] > temp) {
-                buckets[i][k + 1] = buckets[i][k];
-                k--;
-            }
-            buckets[i][k + 1] = temp;
-        }
-    }
+  int pos = 0;
+  for (int i = 0; i < n; i++) {
+    insertionSort(buckets[i], counts[i]);
+    for (int j = 0; j < counts[i]; j++)
+      arr[pos++] = buckets[i][j];
+    free(buckets[i]);
+  }
 
-    // Step 4: Concatenate all buckets back into arr
-    int pos = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < bucketSize[i]; j++)
-            arr[pos++] = buckets[i][j];
+  free(buckets);
+  free(counts);
+  free(capacity);
 
-    // Cleanup
-    for (int i = 0; i < n; i++) free(buckets[i]);
-    free(buckets);
-    free(bucketSize);
+  printf("Bucket Sort Result: ");
+  for (int i = 0; i < n; i++)
+    printf("%d ", arr[i]);
+  printf("\n");
 
-    printf("Bucket Sort Result: ");
-    for (int i = 0; i < n; i++) printf("%.2f ", arr[i]);
-    printf("\n");
-    return 0;
+  return 0;
 }
