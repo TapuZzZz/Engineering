@@ -99,6 +99,8 @@ typedef struct {
 typedef struct { char *buf; size_t len; } HttpBuf;
 
 /* ── Log ring buffer ── */
+/* ── Log ring buffer ── */
+
 typedef struct {
     char  lines[LOG_LINES][128];
     int   head;
