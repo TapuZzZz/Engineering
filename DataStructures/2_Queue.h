@@ -2,7 +2,7 @@
 #define Queue_H
 
 typedef struct QueueNode {
-    int data;
+    void* value;
     struct QueueNode* next;
 } QueueNode;
 
@@ -12,12 +12,16 @@ typedef struct Queue {
     int size;
 } Queue;
 
+void Init_queue(Queue *queue);
 
-void Init_queue(Queue* queue);
-int Is_Empty(Queue* queue);
-void Push_Queue(Queue* queue, int value);
-void Insert_Queue(Queue* queue, int value);
-int Pop_Queue(Queue* queue);
-int Remove_Queue(Queue* queue);
+int Is_Empty(Queue *queue);
+
+void Push_Queue(Queue* queue, void* data);
+
+void Insert_Queue(Queue* queue, void* data);
+
+void* Pop_Queue(Queue* queue);
+
+void* Remove_Queue(Queue* queue);
 
 #endif

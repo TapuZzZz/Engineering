@@ -2,13 +2,16 @@
 #define Stack_H
 
 typedef struct StackNode {
-  int data;
+  void *value;
   struct StackNode *next;
 } StackNode;
 
 void iniStack(StackNode **stack);
-unsigned short isEmpty(StackNode *stack);
-void push(StackNode **stack, int data);
-int pop(StackNode **stack);
+
+int isEmpty(StackNode *stack);
+
+void push(StackNode **stack, void* data);
+
+void* pop(StackNode **stack);
 
 #endif

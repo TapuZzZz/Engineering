@@ -2,25 +2,29 @@
 #include <stdlib.h>
 
 typedef struct StackNode {
-  int data;
+  void *value;
   struct StackNode *next;
 } StackNode;
 
-void iniStack(StackNode **stack) { *stack = NULL; }
+void iniStack(StackNode **stack) {
+  *stack = NULL;
+}
 
-unsigned short isEmpty(StackNode *stack) { return stack == NULL; }
+int isEmpty(StackNode *stack) {
+  return (stack == NULL);
+}
 
-void push(StackNode **stack, int data) {
+void push(StackNode **stack, void* data) {
   StackNode *newNode = (StackNode *)malloc(sizeof(StackNode));
+  newNode->value = data;
 
-  newNode->data = data;
   newNode->next = *stack;
   *stack = newNode;
 }
 
-int pop(StackNode **stack) {
+void* pop(StackNode **stack) {
   StackNode *temp = *stack;
-  int poppedValue = temp->data;
+  void* poppedValue = temp->value;
 
   *stack = (*stack)->next;
   free(temp);
