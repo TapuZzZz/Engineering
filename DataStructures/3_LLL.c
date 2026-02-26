@@ -2,48 +2,45 @@
 #include <stdlib.h>
 
 typedef struct LLLNode {
-    int data;          
-    struct LLLNode* next; 
+    void *value;
+    struct LLLNode *next;
 } LLLNode;
 
-
-void Init_LLL(LLLNode** head) { 
+void Init_LLL(LLLNode **head) { 
     *head = NULL; 
 }
 
-int Isempty_LLL(LLLNode* head) {
+int IsEmpty_LLL(LLLNode *head) {
     return (head == NULL);
 }
 
-void Push_LLL(LLLNode** head, int value) {
-    LLLNode* newLLLNode = (LLLNode*)malloc(sizeof(LLLNode));
-
-    newLLLNode->data = value;
-    newLLLNode->next = *head;
+void Push_LLL(LLLNode **head, void *data) {
+    LLLNode *newLLLNode = (LLLNode*)malloc(sizeof(LLLNode));
+    newLLLNode->value = data;
+    newLLLNode->next = NULL;
     *head = newLLLNode;
 }
 
-void Insert_after_LLL(LLLNode* prevLLLNode, int value) {
+void InsertAfter_LLL(LLLNode *prevLLLNode, void *data) {
     LLLNode *newLLLNode = (LLLNode*)malloc(sizeof(LLLNode));
-
-    newLLLNode->data = value;
+    newLLLNode->value = data;
     newLLLNode->next = prevLLLNode->next;
     prevLLLNode->next = newLLLNode;
 }
 
-int Pop_LLL(LLLNode** head) {
-    LLLNode* temp = *head;
-    int poppedValue = temp->data;
+void* Pop_LLL(LLLNode **head) {
+    LLLNode *LLLnodeToDelete = *head;
+    void* poppedValue = LLLnodeToDelete->value;
     
-    *head = (*head)->next;
-    free(temp);
+    *head = NULL;
+    free(LLLnodeToDelete);
 
     return poppedValue;
 }
 
-int Delete_after_LLL(LLLNode* prevLLLNode) {
-    LLLNode* LLLnodeToDelete = prevLLLNode->next;
-    int deletedValue = LLLnodeToDelete->data;
+void* DeleteAfter_LLL(LLLNode *prevLLLNode) {
+    LLLNode *LLLnodeToDelete = prevLLLNode->next;
+    void* deletedValue = LLLnodeToDelete->value;
     
     prevLLLNode->next = LLLnodeToDelete->next;
     free(LLLnodeToDelete);

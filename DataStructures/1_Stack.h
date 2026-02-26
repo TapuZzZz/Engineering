@@ -6,12 +6,12 @@ typedef struct StackNode {
   struct StackNode *next;
 } StackNode;
 
-void iniStack(StackNode **stack);
+void Init_Stack(StackNode **stack);
 
-int isEmpty(StackNode *stack);
+int IsEmpty_Stack(StackNode *stack);
 
-void push(StackNode **stack, void *data);
+void Push_Stack(StackNode **stack, void *data);
 
-void* pop(StackNode **stack);
+void *Pop_Stack(StackNode **stack);
 
 #endif

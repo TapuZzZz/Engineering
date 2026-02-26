@@ -6,15 +6,15 @@ typedef struct StackNode {
   struct StackNode *next;
 } StackNode;
 
-void iniStack(StackNode **stack) {
+void Init_Stack(StackNode **stack) {
   *stack = NULL;
 }
 
-int isEmpty(StackNode *stack) {
+int IsEmpty_Stack(StackNode *stack) {
   return (stack == NULL);
 }
 
-void push(StackNode **stack, void *data) {
+void Push_Stack(StackNode **stack, void *data) {
   StackNode *newNode = (StackNode *)malloc(sizeof(StackNode));
   newNode->value = data;
 
@@ -22,7 +22,7 @@ void push(StackNode **stack, void *data) {
   *stack = newNode;
 }
 
-void* pop(StackNode **stack) {
+void *Pop_Stack(StackNode **stack) {
   StackNode *temp = *stack;
   void *poppedValue = temp->value;
 
