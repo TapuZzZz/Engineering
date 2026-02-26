@@ -2,14 +2,14 @@
 #include <stdlib.h>
 
 typedef struct QueueNode {
-    void* value;
-    struct QueueNode* next;
+    void *value;
+    struct QueueNode *next;
 } QueueNode;
 
 typedef struct Queue {
-    struct QueueNode* front;
-    struct QueueNode* rear;
-    int size;
+    struct QueueNode *front;
+    struct QueueNode *rear;
+    unsigned int size;
 } Queue;
 
 void Init_queue(Queue *queue) {
@@ -22,7 +22,7 @@ int Is_Empty(Queue *queue) {
     return (queue->size == 0);
 }
 
-void Push_Queue(Queue* queue, void* data) {
+void Push_Queue(Queue *queue, void *data) {
     QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
     newQueueNode->value = data;
     newQueueNode->next = NULL;
@@ -32,7 +32,7 @@ void Push_Queue(Queue* queue, void* data) {
     queue->size++;
 }
 
-void Insert_Queue(Queue* queue, void* data) {
+void Insert_Queue(Queue *queue, void *data) {
     QueueNode* newQueueNode = (QueueNode*)malloc(sizeof(QueueNode));
     newQueueNode->value = data;
     newQueueNode->next = NULL;
@@ -42,7 +42,7 @@ void Insert_Queue(Queue* queue, void* data) {
     queue->size++;
 }
 
-void* Pop_Queue(Queue* queue) {
+void* Pop_Queue(Queue *queue) {
     QueueNode* temp = queue->front;
     void* poppedValue = temp->value;
 
@@ -54,7 +54,7 @@ void* Pop_Queue(Queue* queue) {
     return poppedValue;
 }
 
-void* Remove_Queue(Queue* queue) {
+void* Remove_Queue(Queue *queue) {
     QueueNode* temp = queue->front;
     void* poppedValue = temp->value;
 

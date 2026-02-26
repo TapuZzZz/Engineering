@@ -14,7 +14,7 @@ int isEmpty(StackNode *stack) {
   return (stack == NULL);
 }
 
-void push(StackNode **stack, void* data) {
+void push(StackNode **stack, void *data) {
   StackNode *newNode = (StackNode *)malloc(sizeof(StackNode));
   newNode->value = data;
 
@@ -24,7 +24,7 @@ void push(StackNode **stack, void* data) {
 
 void* pop(StackNode **stack) {
   StackNode *temp = *stack;
-  void* poppedValue = temp->value;
+  void *poppedValue = temp->value;
 
   *stack = (*stack)->next;
   free(temp);

@@ -10,7 +10,7 @@ void iniStack(StackNode **stack);
 
 int isEmpty(StackNode *stack);
 
-void push(StackNode **stack, void* data);
+void push(StackNode **stack, void *data);
 
 void* pop(StackNode **stack);
 
