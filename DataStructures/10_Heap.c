@@ -13,19 +13,19 @@ void Init_Heap(Heap* heap) {
     heap->vecsize = 0;
 }
 
-int findLeftSon(unsigned short currOffset){
-	return (currOffset*2);
+int findLeftSon(int currOffset){
+	return (currOffset * 2);
 }
 	
-int findRightSon(unsigned short currOffset){
-	return ((currOffset*2)+1);
+int findRightSon(int currOffset){
+	return ((currOffset * 2) + 1);
 }
 
-int findParent(unsigned short currOffset){
-	return (currOffset/2);
+int findParent(int currOffset){
+	return (currOffset / 2);
 }
 
-void Heapify(Heap* heap, int offset) {
+void Heapify(Heap *heap, int offset) {
     int largest = offset;
     int left = findLeftSon(offset);
     int right = findRightSon(offset);
@@ -44,7 +44,7 @@ void Heapify(Heap* heap, int offset) {
     }
 }
 
-void Swap(Heap* heap, int offset1, int offset2){
+void Swap(Heap *heap, int offset1, int offset2){
     int temp = heap->vec[offset2];
     heap->vec[offset2] = heap->vec[offset1];
     heap->vec[offset1] = temp;

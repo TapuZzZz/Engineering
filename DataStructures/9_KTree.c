@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "3_LLL.h"
 
-
 typedef struct KTreeNode {
     void *value;
     LLLNode *children;
@@ -13,15 +12,15 @@ void Init_KTree(KTreeNode **root) {
 }
 
 void Make_KTree(KTreeNode **root, void *data) {
-    KTreeNode *newNode = (KTreeNode*)malloc(sizeof(KTreeNode));
-    newNode->value = data;
-    newNode->children = NULL;
-    *root = newNode;
+    KTreeNode *newKTreeNode = (KTreeNode*)malloc(sizeof(KTreeNode));
+    newKTreeNode->value = data;
+    newKTreeNode->children = NULL;
+    *root = newKTreeNode;
 }
 
 void Add_KChild(KTreeNode *parentNode, void *data) {
-    KTreeNode *newNode = (KTreeNode*)malloc(sizeof(KTreeNode));
-    newNode->value = data;
-    newNode->children = NULL;
-    Push_LLL(&parentNode->children, newNode);
+    KTreeNode *newKTreeNode = (KTreeNode*)malloc(sizeof(KTreeNode));
+    newKTreeNode->value = data;
+    newKTreeNode->children = NULL;
+    Push_LLL(&parentNode->children, newKTreeNode);
 }
