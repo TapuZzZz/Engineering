@@ -1,58 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct ThreeNode {
-    int data;
-    struct ThreeNode* left;
-    struct ThreeNode* middle;
-    struct ThreeNode* right;
-} ThreeNode;
+typedef struct TernaryNode {
+    void *value;
+    struct TernaryNode *left;
+    struct TernaryNode *middle;
+    struct TernaryNode *right;
+} TernaryNode;
 
-
-void Init_Tree(ThreeNode** root) {
+void Init_TTree(TernaryNode **root) {
     *root = NULL;
 }
 
-void Make_Tree(ThreeNode** root, int data) {
-    ThreeNode* newNode = (ThreeNode*)(malloc(sizeof(ThreeNode)));
-
-    newNode->data = data;
+void Make_TTree(TernaryNode **root, void *data) {
+    TernaryNode *newNode = (TernaryNode*)malloc(sizeof(TernaryNode));
+    newNode->value = data;
     newNode->left = NULL;
     newNode->middle = NULL;
     newNode->right = NULL;
-    
-    *root = newNode; 
+    *root = newNode;
 }
 
-void Set_Left(ThreeNode* parentNode, int data) {
-    ThreeNode* newNode = (ThreeNode*)(malloc(sizeof(ThreeNode)));
-
-    newNode->data = data;
+void Set_TLeft(TernaryNode *parentNode, void *data) {
+    TernaryNode *newNode = (TernaryNode*)malloc(sizeof(TernaryNode));
+    newNode->value = data;
     newNode->left = NULL;
     newNode->middle = NULL;
     newNode->right = NULL;
-    
-    parentNode->left = newNode; 
+    parentNode->left = newNode;
 }
 
-void Set_Middle(ThreeNode* parentNode, int data) {
-    ThreeNode* newNode = (ThreeNode*)(malloc(sizeof(ThreeNode)));
-
-    newNode->data = data;
+void Set_TMiddle(TernaryNode *parentNode, void *data) {
+    TernaryNode *newNode = (TernaryNode*)malloc(sizeof(TernaryNode));
+    newNode->value = data;
     newNode->left = NULL;
     newNode->middle = NULL;
     newNode->right = NULL;
-    
-    parentNode->middle = newNode; 
+    parentNode->middle = newNode;
 }
 
-void Set_Right(ThreeNode* parentNode, int data) {
-    ThreeNode* newNode = (ThreeNode*)(malloc(sizeof(ThreeNode)));
-
-    newNode->data = data;
+void Set_TRight(TernaryNode *parentNode, void *data) {
+    TernaryNode *newNode = (TernaryNode*)malloc(sizeof(TernaryNode));
+    newNode->value = data;
     newNode->left = NULL;
     newNode->middle = NULL;
     newNode->right = NULL;
-    
-    parentNode->right = newNode; 
+    parentNode->right = newNode;
 }

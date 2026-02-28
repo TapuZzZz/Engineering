@@ -1,18 +1,21 @@
-#ifndef TST_H
-#define TST_H
+#ifndef TERNARY_TREE_H
+#define TERNARY_TREE_H
 
-typedef struct ThreeNode {
-    int data;
-    struct ThreeNode* right;
-    struct ThreeNode* middle;
-    struct ThreeNode* left;
-} ThreeNode;
+typedef struct TernaryNode {
+    void *value;
+    struct TernaryNode *left;
+    struct TernaryNode *middle;
+    struct TernaryNode *right;
+} TernaryNode;
 
+void Init_TTree(TernaryNode **root);
 
-void Init_Tree(ThreeNode** root);
-void Make_Tree(ThreeNode** root, int data);
-void Set_Left(ThreeNode* parentNode, int data);
-void Set_Middle(ThreeNode* parentNode, int data);
-void Set_Right(ThreeNode* parentNode, int data);
+void Make_TTree(TernaryNode **root, void *data);
+
+void Set_TLeft(TernaryNode *parentNode, void *data);
+
+void Set_TMiddle(TernaryNode *parentNode, void *data);
+
+void Set_TRight(TernaryNode *parentNode, void *data);
 
 #endif

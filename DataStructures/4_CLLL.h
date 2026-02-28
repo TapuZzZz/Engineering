@@ -2,7 +2,7 @@
 #define CLLL_H
 
 typedef struct CLLLNode {
-    int data;
+    void *value;
     struct CLLLNode* next;
 } CLLLNode;
 
