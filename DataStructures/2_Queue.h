@@ -1,5 +1,5 @@
-#ifndef Queue_H
-#define Queue_H
+#ifndef QUEUE.H
+#define QUEUE.H
 
 typedef struct QueueNode {
     void *value;
@@ -9,7 +9,6 @@ typedef struct QueueNode {
 typedef struct Queue {
     struct QueueNode *front;
     struct QueueNode *rear;
-    unsigned int size;
 } Queue;
 
 void Init_Queue(Queue *queue);

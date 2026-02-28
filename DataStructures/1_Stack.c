@@ -15,19 +15,16 @@ int IsEmpty_Stack(StackNode *stack) {
 }
 
 void Push_Stack(StackNode **stack, void *data) {
-  StackNode *newNode = (StackNode *)malloc(sizeof(StackNode));
-  newNode->value = data;
-
-  newNode->next = *stack;
-  *stack = newNode;
+  StackNode *newStackNode = (StackNode*)malloc(sizeof(StackNode));
+  newStackNode->value = data;
+  newStackNode->next = *stack;
+  *stack = newStackNode;
 }
 
 void *Pop_Stack(StackNode **stack) {
-  StackNode *temp = *stack;
-  void *poppedValue = temp->value;
-
+  StackNode *StackNodeToPop = *stack;
+  void *poppedValue = StackNodeToPop->value;
   *stack = (*stack)->next;
-  free(temp);
-
+  free(StackNodeToPop);
   return poppedValue;
 }

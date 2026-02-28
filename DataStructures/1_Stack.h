@@ -1,5 +1,5 @@
-#ifndef Stack_H
-#define Stack_H
+#ifndef STACK.H
+#define STACK.H
 
 typedef struct StackNode {
   void *value;
