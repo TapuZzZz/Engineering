@@ -30,7 +30,7 @@ void InsertAfter_LLL(LLLNode *prevLLLNode, void *data) {
 
 void* Pop_LLL(LLLNode **head) {
     LLLNode *LLLnodeToDelete = *head;
-    void* poppedValue = LLLnodeToDelete->value;
+    void *poppedValue = LLLnodeToDelete->value;
     
     *head = NULL;
     free(LLLnodeToDelete);

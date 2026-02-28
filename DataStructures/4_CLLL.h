@@ -8,10 +8,15 @@ typedef struct CLLLNode {
 
 
 void Init_CLLL(CLLLNode** last);
-int Isempty_CLLL(CLLLNode* last);
+
+int IsEmpty_CLLL(CLLLNode* last);
+
 void Push_CLLL(CLLLNode** last, int value);
-void Insert_after_CLLL(CLLLNode** last, CLLLNode* prevCLLLNode, int value);
-int PopCLLL(CLLLNode** last);
-int Delete_afterCLLL(CLLLNode** last, CLLLNode* prevCLLLNode);
+
+void InsertAfter_CLLL(CLLLNode** last, CLLLNode* prevCLLLNode, int value);
+
+void* Pop_CLLL(CLLLNode** last);
+
+void* DeleteAfter_CLLL(CLLLNode *prevCLLLNode);
 
 #endif

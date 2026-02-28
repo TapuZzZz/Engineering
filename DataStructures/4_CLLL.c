@@ -2,58 +2,48 @@
 #include <stdlib.h>
 
 typedef struct CLLLNode {
-    int data;
-    struct CLLLNode* next;
+    void *value;
+    struct CLLLNode *next;
 } CLLLNode;
 
 
-void Init_CLLL(CLLLNode** last) {
-    *last = NULL;
+void Init_CLLL(CLLLNode **manager) {
+    *manager = NULL;
 }
 
-int Isempty_CLLL(CLLLNode* last) {
-    return (last == NULL);
+int IsEmpty_CLLL(CLLLNode *manager) {
+    return (manager == NULL);
 }
 
-void Push_CLLL(CLLLNode** last, int value) {
-    CLLLNode* newCLLLNode = (CLLLNode*)malloc(sizeof(CLLLNode));
-
-    newCLLLNode->data = value;
-    newCLLLNode->next = (*last)->next;
-    (*last)->next = newCLLLNode;
+void Push_CLLL(CLLLNode **manager, void *data) {
+    CLLLNode *newCLLLNode = (CLLLNode*)malloc(sizeof(CLLLNode));
+    newCLLLNode->value = data;
+    newCLLLNode->next = newCLLLNode;
+    *manager = newCLLLNode;
 }
 
-void Insert_after_CLLL(CLLLNode** last, CLLLNode* prevCLLLNode, int value) {
-    CLLLNode *newCLLLNode = (CLLLNode *)malloc(sizeof(CLLLNode));
-
-    newCLLLNode->data = value;
+void InsertAfter_CLLL(CLLLNode *prevCLLLNode, void *data) {
+    CLLLNode *newCLLLNode = (CLLLNode*)malloc(sizeof(CLLLNode));
+    newCLLLNode->value = data;
     newCLLLNode->next = prevCLLLNode->next;
     prevCLLLNode->next = newCLLLNode;
 }
 
-int PopCLLL(CLLLNode** last) {
-    CLLLNode* head = (*last)->next;
-    int poppedValue = head->data;
-    
-    (*last)->next = head->next;
-    free(head);
+void* Pop_CLLL(CLLLNode **manager) {
+    CLLLNode *LLLnodeToDelete = *manager;
+    void *poppedValue = LLLnodeToDelete->value;
+
+    *manager = NULL;
+    free(LLLnodeToDelete);
 
     return poppedValue;
 }
 
-int Delete_afterCLLL(CLLLNode** last, CLLLNode* prevCLLLNode) {
-    CLLLNode* CLLLnodeToDelete = prevCLLLNode->next;
-    int deletedValue = CLLLnodeToDelete->data;
+void* DeleteAfter_CLLL(CLLLNode *prevCLLLNode) {
+    CLLLNode *CLLLnodeToDelete = prevCLLLNode->next;
+    void *deletedValue = CLLLnodeToDelete->value;
 
-    if (CLLLnodeToDelete == *last) {
-        *last = prevCLLLNode;
-    }
-
-    if (CLLLnodeToDelete == prevCLLLNode) {
-        *last = NULL;
-    } else {
-        prevCLLLNode->next = CLLLnodeToDelete->next;
-    }
+    prevCLLLNode->next = CLLLnodeToDelete->next;
     free(CLLLnodeToDelete);
 
     return deletedValue;
