@@ -31,19 +31,15 @@ void InsertAfter_LLL(LLLNode *prevLLLNode, void *data) {
 void* Pop_LLL(LLLNode **head) {
     LLLNode *LLLnodeToDelete = *head;
     void *poppedValue = LLLnodeToDelete->value;
-    
     *head = NULL;
     free(LLLnodeToDelete);
-
     return poppedValue;
 }
 
 void* DeleteAfter_LLL(LLLNode *prevLLLNode) {
     LLLNode *LLLnodeToDelete = prevLLLNode->next;
     void* deletedValue = LLLnodeToDelete->value;
-    
     prevLLLNode->next = LLLnodeToDelete->next;
     free(LLLnodeToDelete);
-
     return deletedValue;
 }
