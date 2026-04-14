@@ -18,17 +18,21 @@ next_item:
     je exit
 
     test ax, 1
-    jnz skip
+    jnz skip_next
+    inc [cnt]
 
-skip:
+skip_next:
+    add si, 2
+    jmp next_item
 
 
 exit:
+
+    mov dl, [cnt]
+    add dl, '0'
+    mov ah, 02h
+    int 21h
     mov ax, 4c00h
     int 21h
     
-        
-    proc countEven 
-
-    endp countEven
 END start
