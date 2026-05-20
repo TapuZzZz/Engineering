@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Artyom Kiselhof - Resume Project</title>
+    <style>
+        /* ===== GLOBAL RESET ===== */
+        /* The * (universal selector) targets every element on the page */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ===== BODY (element selector) ===== */
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background-color: #e8e4d9;
+            color: #2c2c2c;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        /* ===== MAIN CONTAINER (class selector with .) ===== */
+        /* This is the white "page" that holds everything */
+        .cv-container {
+            width: 800px;
+            max-width: 100%;
+            margin: 0 auto;             /* centers the container horizontally */
+            background-color: #ffffff;
+            border: 2px solid #3a3a3a;
+            padding: 40px;
+            box-shadow: 8px 8px 0px #3a3a3a;
+        }
+
+        /* ===== HEADER SECTION ===== */
+        .header {
+            border-bottom: 4px double #3a3a3a;
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* The profile image - DISPLAY: BLOCK so it sits on its own line */
+        .profile-img {
+            display: block;
+            width: 140px;
+            height: 140px;
+            border: 4px solid #8b3a3a;
+            border-radius: 50%;
+            padding: 4px;
+            background-color: #f5f1e8;
+            margin: 0 auto 20px auto;   /* auto on left/right centers a block */
+        }
+
+        /* ID selector with # — only ONE element can have this id */
+        #main-name {
+            display: block;
+            text-align: center;
+            font-size: 38px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #8b3a3a;
+            margin-bottom: 8px;
+        }
+
+        #job-title {
+            display: block;
+            text-align: center;
+            font-size: 16px;
+            font-style: italic;
+            color: #555;
+            letter-spacing: 2px;
+        }
+
+        /* ===== CONTACT INFO (inline elements demo) ===== */
+        .contact-bar {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #f5f1e8;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+        }
+
+        /* These <span> elements are DISPLAY: INLINE by default —
+           they flow on the same line, side by side */
+        .contact-item {
+            display: inline;
+            padding: 0 15px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        /* ===== SECTION HEADINGS ===== */
+        /* h2 is an element selector */
+        h2 {
+            font-size: 22px;
+            color: #8b3a3a;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border-left: 6px solid #8b3a3a;
+            padding-left: 12px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        /* ===== PARAGRAPHS ===== */
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        /* ===== JOB / EDUCATION ENTRIES ===== */
+        /* Each entry is a "box" with its own padding, border, margin */
+        .entry {
+            border: 1px solid #d4cfc2;
+            background-color: #fafaf5;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-left: 5px solid #8b3a3a;
+        }
+
+        .entry-title {
+            display: block;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c2c2c;
+            margin-bottom: 4px;
+        }
+
+        .entry-meta {
+            display: block;
+            font-size: 13px;
+            font-style: italic;
+            color: #777;
+            margin-bottom: 10px;
+        }
+
+        /* ===== SKILLS (inline-block lets boxes sit side by side
+            while still respecting width/height) ===== */
+        .skill-tag {
+            display: inline-block;
+            background-color: #8b3a3a;
+            color: #ffffff;
+            padding: 6px 14px;
+            margin: 4px 4px 4px 0;
+            border: 2px solid #6b2828;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* ===== LISTS ===== */
+        ul {
+            margin-left: 25px;
+            margin-bottom: 12px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* ===== DESCENDANT SELECTOR (space between selectors) ===== */
+        /* This targets any <strong> that is INSIDE an .entry */
+        .entry strong {
+            color: #8b3a3a;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            margin-top: 35px;
+            padding-top: 20px;
+            border-top: 2px solid #3a3a3a;
+            text-align: center;
+            font-size: 13px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cv-container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="header">
+            <img class="profile-img"
+                 src="./Artyom.jpg"
+                 alt="Profile photo">
+
+            <span id="main-name">Artyom Kiselhof</span>
+            <span id="job-title">Junior Software Developer &middot; Student</span>
+
+            <div class="contact-bar">
+                <span class="contact-item">📧 artyomkiselhof2007@gmail.com</span>
+                <span class="contact-item">📱 052-7500871</span>
+                <span class="contact-item">📍 Petah Tikva, Israel</span>
+            </div>
+        </div>
+
+        <!-- ===== ABOUT ME ===== -->
+        <h2>About Me</h2>
+        <p>
+            A 19-year-old student passionate about software development, databases, and photography.
+            Currently studying HTML, CSS, and JavaScript while building projects.
+            I enjoy iterative work, clean architecture, and the moment everything finally clicks.
+        </p>
+
+        <!-- ===== EDUCATION ===== -->
+        <h2>Education</h2>
+
+        <div class="entry">
+            <span class="entry-title">Amal Holtz High School &middot; Tel Aviv</span>
+            <span class="entry-meta">2022 &mdash; Present</span>
+            <p>
+                High school studies in the <strong>Software Engineering &amp; Cyber</strong> track,
+                with an additional major in <strong>Physics</strong>. Completed a final project focused
+                on <strong>web development</strong> and <strong>network communication</strong>,
+                covering front-end design, client-server architecture, and the fundamentals
+                of how data is transmitted over the web.
+            </p>
+        </div>
+
+        <div class="entry">
+            <span class="entry-title">Amal Bet &middot; Practical Software Engineering Diploma</span>
+            <span class="entry-meta">Petah Tikva &middot; Ongoing</span>
+            <p>
+                Studying toward a <strong>Practical Engineer</strong> certification in Software Engineering.
+                Core coursework includes <strong>C programming</strong>, <strong>Algorithms &amp; Data Structures</strong>,
+                <strong>Statistics</strong>, <strong>Assembly language</strong>, <strong>Databases (SQL)</strong>,
+                and <strong>Python</strong> &mdash; building a strong foundation in both low-level systems
+                programming and modern application development.
+            </p>
+        </div>
+
+        <!-- ===== SKILLS ===== -->
+        <h2>Skills</h2>
+        <p>
+            <span class="skill-tag">C</span>
+            <span class="skill-tag">C++</span>
+            <span class="skill-tag">C#</span>
+            <span class="skill-tag">Python</span>
+            <span class="skill-tag">MySQL</span>
+            <span class="skill-tag">Assembly</span>
+            <span class="skill-tag">Git</span>
+            <span class="skill-tag">Photography</span>
+            
+        </p>
+
+        <!-- ===== LANGUAGES ===== -->
+        <h2>Languages</h2>
+        <ul>
+            <li><strong>Hebrew</strong> &mdash; Native</li>
+            <li><strong>English</strong> &mdash; Advanced</li>
+            <li><strong>Russian</strong> &mdash; Native</li>
+        </ul>
+
+        <!-- ===== FOOTER ===== -->
+        <div class="footer">
+            <span>Curriculum Vitae &middot; Built with HTML &amp; CSS Box Model &middot; 2026</span>
+        </div>
+
+    </div>
+
+</body>
+</html>
