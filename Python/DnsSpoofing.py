@@ -21,7 +21,7 @@ def prnDNS(p):
             id=p[DNS].id,          
             qr=1,                  
             aa=1,                
-            qd=p[DNS].qd,          
+            qd=p[DNS].qd,    
             an=DNSRR(             
                 rrname=qname, 
                 type='A', 
