@@ -1,1 +1,12 @@
-<h1>Hello, {{ username }}!</h1>
+<input type="text" [(ngModel)]="userName" placeholder="Enter Name:">
+<hr>
+<input type="number" [(ngModel)]="myAge" placeholder="Enter Age:">
+<hr>
+<h3>Hello {{ userName }}!</h3>
+<hr>
+<button [disabled]="switch">Send</button>
+<input type="checkbox" [(ngModel)]="switch">
+<hr>
+@if (myAge !== null && myAge > ageMin) {
+    <h1>You can buy alcohol</h1>
+}
