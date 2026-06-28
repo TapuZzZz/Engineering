@@ -1,0 +1,54 @@
+<nav class="navbar" [class.scrolled]="isScrolled()">
+  <div class="nav-container">
+
+    <!-- Logo -->
+    <a routerLink="/" class="logo">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
+          <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+      <span class="logo-text">Pitch<span class="logo-accent">Pulse</span></span>
+    </a>
+
+    <!-- Desktop Links -->
+    <ul class="nav-links">
+      <li *ngFor="let link of navLinks">
+        <a [routerLink]="link.href" class="nav-link" routerLinkActive="active">
+          {{ link.label }}
+        </a>
+      </li>
+    </ul>
+
+    <!-- CTA -->
+    <div class="nav-actions">
+      <a routerLink="/login" class="btn-ghost">Log in</a>
+      <a routerLink="/signup" class="btn-primary">
+        Try Free
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+
+    <!-- Hamburger -->
+    <button class="hamburger" (click)="toggleMobileMenu()" [class.open]="mobileMenuOpen()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" [class.open]="mobileMenuOpen()">
+    <ul>
+      <li *ngFor="let link of navLinks">
+        <a [routerLink]="link.href" (click)="mobileMenuOpen.set(false)">{{ link.label }}</a>
+      </li>
+    </ul>
+    <div class="mobile-actions">
+      <a routerLink="/login" class="btn-ghost" (click)="mobileMenuOpen.set(false)">Log in</a>
+      <a routerLink="/signup" class="btn-primary" (click)="mobileMenuOpen.set(false)">Try Free</a>
+    </div>
+  </div>
+</nav>

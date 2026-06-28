@@ -1,0 +1,132 @@
+<app-navbar></app-navbar>
+
+<main class="home">
+
+  <!-- ── HERO ─────────────────────────────────────── -->
+  <section class="hero">
+    <!-- Ambient blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="hero-content">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Real-time audio analysis · FFT + ML
+      </div>
+
+      <h1 class="hero-title">
+        Hear every note.<br>
+        <span class="gradient-text">See it instantly.</span>
+      </h1>
+
+      <p class="hero-sub">
+        PitchPulse listens as you play and displays every note on a live score —
+        no teacher required, no manual input.
+      </p>
+
+      <div class="hero-cta">
+        <a routerLink="/demo" class="btn-primary-lg">
+          Try the Live Demo
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a routerLink="/how-it-works" class="btn-outline-lg">How it works</a>
+      </div>
+
+      <p class="hero-note">No account needed &nbsp;·&nbsp; Works in your browser &nbsp;·&nbsp; Free to start</p>
+    </div>
+
+    <!-- Animated wave canvas -->
+    <div class="wave-wrap">
+      <canvas #waveCanvas class="wave-canvas"></canvas>
+      <div class="wave-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" fill="#A855F7"/>
+          <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="#A855F7" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Listening for audio…
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ──────────────────────────────────── -->
+  <section class="features">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="eyebrow">What PitchPulse Does</span>
+        <h2>Engineered for musicians<br>who want to understand their sound</h2>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card" *ngFor="let f of features">
+          <div class="feature-icon">{{ f.icon }}</div>
+          <h3>{{ f.title }}</h3>
+          <p>{{ f.desc }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ───────────────────────────────── -->
+  <section class="how-it-works">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="eyebrow">Under the Hood</span>
+        <h2>From microphone to music notation</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Audio Capture</h4>
+            <p>The Web Audio API streams raw PCM data from your microphone in real time.</p>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>FFT Analysis</h4>
+            <p>A Fast Fourier Transform resolves the signal into frequency bins, isolating the fundamental pitch.</p>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>ML Classification</h4>
+            <p>A trained model maps frequencies to musical notes and filters background noise.</p>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Live Score</h4>
+            <p>Notes appear on a virtual staff and are saved to your session history.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA BANNER ─────────────────────────────────── -->
+  <section class="cta-banner">
+    <div class="section-container">
+      <div class="cta-card">
+        <div class="blob blob-cta"></div>
+        <h2>Start listening to your music.</h2>
+        <p>Open the demo, pick up your instrument, and play.</p>
+        <a routerLink="/demo" class="btn-primary-lg">
+          Open PitchPulse
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
