@@ -32,7 +32,7 @@
 const char* WIFI_SSID     = "TP-Link- Salon";
 const char* WIFI_PASSWORD = "03032007";
 
-const char* PC_IP_ADDRESS = "192.168.0.XXX";  // <-- Replace XXX with your Mac's real IP
+const char* PC_IP_ADDRESS = "192.168.0.173";  // <-- Replace XXX with your Mac's real IP
 const uint16_t PC_PORT    = 8000;
 
 WiFiClient tcpClient;   // One reusable TCP connection object
