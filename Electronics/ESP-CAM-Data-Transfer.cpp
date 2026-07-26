@@ -85,8 +85,8 @@ bool initCamera() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_QVGA;
-  config.jpeg_quality  = 12;
+  config.frame_size   = FRAMESIZE_VGA;
+  config.jpeg_quality  = 10;
   config.fb_count      = 1;
 
   esp_err_t result = esp_camera_init(&config);
