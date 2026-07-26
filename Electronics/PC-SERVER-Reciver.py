@@ -1,11 +1,12 @@
 # =================================================================
-#  PC SERVER - Part 2: Receive frames AND display them live
+#  PC SERVER - Part 3: Receive frames, display them, and measure timing
 # =================================================================
 
 import socket
 import struct
-import numpy as np    # NEW: lets us treat raw bytes as a numeric image array
-import cv2             # NEW: OpenCV - decodes JPEG bytes and shows them in a window
+import time
+import numpy as np
+import cv2
 
 # -----------------------------------------------------------------
 #  Configuration - must match the ESP32 code exactly
@@ -16,7 +17,6 @@ LISTEN_PORT = 8000
 
 # -----------------------------------------------------------------
 #  Function: receive_exact
-#  (unchanged from before)
 # -----------------------------------------------------------------
 def receive_exact(connection, num_bytes):
     data = b""
@@ -34,7 +34,6 @@ def receive_exact(connection, num_bytes):
 
 # -----------------------------------------------------------------
 #  Function: receive_one_frame
-#  (unchanged from before)
 # -----------------------------------------------------------------
 def receive_one_frame(connection):
     size_bytes = receive_exact(connection, 4)
@@ -47,27 +46,19 @@ def receive_one_frame(connection):
 
 # -----------------------------------------------------------------
 #  Function: decode_and_show
-#  What it does: takes raw JPEG bytes, turns them into an actual
-#  image OpenCV can display, and shows it in a live window.
 # -----------------------------------------------------------------
 def decode_and_show(jpeg_bytes):
-    # Step 1: treat the raw JPEG bytes as a 1D array of numbers (0-255 each)
     jpeg_array = np.frombuffer(jpeg_bytes, dtype=np.uint8)
-
-    # Step 2: decode that array as an actual image (rows x columns x color channels)
     image = cv2.imdecode(jpeg_array, cv2.IMREAD_COLOR)
 
     if image is None:
-        # Happens if a frame arrived corrupted/incomplete - skip it, don't crash
         print("Warning: failed to decode a frame, skipping.")
         return
 
-    cv2.imshow("ESP32-CAM Live Feed", image)   # Opens/updates a window with this image
+    image = cv2.rotate(image, cv2.ROTATE_180)
 
+    cv2.imshow("ESP32-CAM Live Feed", image)
     cv2.waitKey(1)
-    # IMPORTANT: OpenCV windows need this call to actually redraw and process
-    # events (like being moved or closed). The "1" means "wait up to 1ms" -
-    # we don't want to pause our loop, just give the window a chance to update.
 
 
 # =================================================================
@@ -86,15 +77,34 @@ def main():
     print(f"ESP32-CAM connected from {address}")
 
     frame_count = 0
+    last_report_time = time.time()
+    frames_since_report = 0
 
     while True:
         try:
+            receive_start = time.time()
             jpeg_bytes = receive_one_frame(connection)
+            receive_end = time.time()
+
             frame_count += 1
+            frames_since_report += 1
 
-            decode_and_show(jpeg_bytes)   # NEW: display instead of just printing size
+            decode_start = time.time()
+            decode_and_show(jpeg_bytes)
+            decode_end = time.time()
 
-            print(f"Received frame #{frame_count}, size in bytes: {len(jpeg_bytes)}")
+            receive_ms = (receive_end - receive_start) * 1000
+            decode_ms  = (decode_end - decode_start) * 1000
+
+            print(f"Frame #{frame_count} | size: {len(jpeg_bytes)} bytes "
+                  f"| receive: {receive_ms:.1f} ms | decode+show: {decode_ms:.1f} ms")
+
+            now = time.time()
+            if now - last_report_time >= 1.0:
+                fps = frames_since_report / (now - last_report_time)
+                print(f"---- Current FPS: {fps:.1f} ----")
+                last_report_time = now
+                frames_since_report = 0
 
         except ConnectionError:
             print("ESP32-CAM disconnected.")
@@ -102,7 +112,7 @@ def main():
 
     connection.close()
     server_socket.close()
-    cv2.destroyAllWindows()   # NEW: close the display window cleanly when we're done
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

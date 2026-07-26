@@ -1,5 +1,5 @@
 // =================================================================
-//  ESP32-CAM  -  PART 3: Send Frames to PC over TCP
+//  ESP32-CAM  -  PART 3e: Send Frames to PC over TCP (fixed error check)
 // =================================================================
 
 #include <WiFi.h>
@@ -32,7 +32,7 @@
 const char* WIFI_SSID     = "TP-Link- Salon";
 const char* WIFI_PASSWORD = "03032007";
 
-const char* PC_IP_ADDRESS = "192.168.0.173";  // <-- Replace XXX with your Mac's real IP
+const char* PC_IP_ADDRESS = "192.168.0.173";
 const uint16_t PC_PORT    = 8000;
 
 WiFiClient tcpClient;   // One reusable TCP connection object
@@ -85,8 +85,8 @@ bool initCamera() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_VGA;
-  config.jpeg_quality  = 10;
+  config.frame_size   = FRAMESIZE_VGA;   // 640x480
+  config.jpeg_quality  = 10;              // Lower = higher quality, less compression artifacts
   config.fb_count      = 1;
 
   esp_err_t result = esp_camera_init(&config);
@@ -105,7 +105,8 @@ bool initCamera() {
 // -----------------------------------------------------------------
 //  Function: connectToServer
 //  What it does: opens a TCP connection to the PC if not already
-//  connected. Returns true only if a connection is ready to use.
+//  connected, and disables Nagle's algorithm so small writes (like
+//  our 4-byte size header) go out immediately.
 // -----------------------------------------------------------------
 bool connectToServer() {
   if (tcpClient.connected()) {
@@ -120,18 +121,50 @@ bool connectToServer() {
     return false;
   }
 
+  tcpClient.setNoDelay(true);   // Disable Nagle's algorithm - send immediately, don't batch small writes
+
   Serial.println("Connected to PC server.");
   return true;
 }
 
 
 // -----------------------------------------------------------------
+//  Function: sendAllBytes
+//  What it does: TCP write() is not guaranteed to send every byte
+//  in one call - it can send only part of the data if its internal
+//  buffer is full, or return -1 on failure. This function keeps
+//  sending the remaining bytes until everything is out, and
+//  correctly detects failure using a SIGNED type.
+// -----------------------------------------------------------------
+void sendAllBytes(const uint8_t* data, size_t totalLength) {
+  size_t sentSoFar = 0;
+
+  while (sentSoFar < totalLength) {
+    int justSent = tcpClient.write(data + sentSoFar, totalLength - sentSoFar);
+    // Captured as "int" (signed), not "size_t" (unsigned), so a -1
+    // error return stays a real negative number instead of silently
+    // wrapping around into a huge positive one.
+
+    if (justSent <= 0) {   // Catches both 0 AND negative (error) cases
+      Serial.println("Send failed - connection may be broken.");
+      tcpClient.stop();     // Force-close so connectToServer() cleanly reconnects next loop
+      return;
+    }
+
+    sentSoFar += (size_t)justSent;   // Safe to convert now, since we know it's positive
+  }
+}
+
+
+// -----------------------------------------------------------------
 //  Function: captureAndSendFrame
-//  What it does: grabs one JPEG frame and sends it to the PC as
-//  [4 bytes = size][JPEG bytes], so the PC knows exactly how many
-//  bytes belong to this frame.
+//  What it does: grabs one JPEG frame, sends it to the PC using the
+//  reliable sendAllBytes function, and measures how long each stage
+//  (capture vs. send) actually takes.
 // -----------------------------------------------------------------
 void captureAndSendFrame() {
+  unsigned long startTime = millis();   // Timestamp before we start capturing
+
   camera_fb_t* frameBuffer = esp_camera_fb_get();
 
   if (!frameBuffer) {
@@ -139,15 +172,25 @@ void captureAndSendFrame() {
     return;
   }
 
+  unsigned long captureTime = millis();   // Timestamp right after capture finished
+
   uint32_t frameSize = frameBuffer->len;
 
-  tcpClient.write((uint8_t*)&frameSize, sizeof(frameSize));
-  tcpClient.write(frameBuffer->buf, frameBuffer->len);
+  sendAllBytes((uint8_t*)&frameSize, sizeof(frameSize));   // Send the 4-byte size, fully
+  sendAllBytes(frameBuffer->buf, frameBuffer->len);         // Send the JPEG bytes, fully
+
+  unsigned long sendTime = millis();   // Timestamp right after sending finished
 
   esp_camera_fb_return(frameBuffer);
 
-  Serial.print("Sent frame, size in bytes: ");
-  Serial.println(frameSize);
+  // Report how long each stage took, in milliseconds
+  Serial.print("Sent frame, size: ");
+  Serial.print(frameSize);
+  Serial.print(" bytes | capture: ");
+  Serial.print(captureTime - startTime);
+  Serial.print(" ms | send: ");
+  Serial.print(sendTime - captureTime);
+  Serial.println(" ms");
 }
 
 
@@ -171,5 +214,5 @@ void loop() {
   if (connectToServer()) {
     captureAndSendFrame();
   }
-  delay(100);   // ~10 frames per second
+  delay(25);   // Target ~22-23 FPS: ~19ms processing + 25ms delay
 }
