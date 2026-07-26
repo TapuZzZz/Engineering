@@ -1,5 +1,5 @@
 // =================================================================
-//  ESP32-CAM  -  PART 3e: Send Frames to PC over TCP (fixed error check)
+//  ESP32-CAM  -  PART 3f: Send Frames to PC over TCP (with JPEG validation)
 // =================================================================
 
 #include <WiFi.h>
@@ -131,36 +131,53 @@ bool connectToServer() {
 // -----------------------------------------------------------------
 //  Function: sendAllBytes
 //  What it does: TCP write() is not guaranteed to send every byte
-//  in one call - it can send only part of the data if its internal
-//  buffer is full, or return -1 on failure. This function keeps
-//  sending the remaining bytes until everything is out, and
-//  correctly detects failure using a SIGNED type.
+//  in one call. This function keeps sending the remaining bytes
+//  until everything is out, and correctly detects failure using a
+//  SIGNED type (so a -1 error return doesn't silently wrap around
+//  into a huge positive number).
 // -----------------------------------------------------------------
 void sendAllBytes(const uint8_t* data, size_t totalLength) {
   size_t sentSoFar = 0;
 
   while (sentSoFar < totalLength) {
     int justSent = tcpClient.write(data + sentSoFar, totalLength - sentSoFar);
-    // Captured as "int" (signed), not "size_t" (unsigned), so a -1
-    // error return stays a real negative number instead of silently
-    // wrapping around into a huge positive one.
 
     if (justSent <= 0) {   // Catches both 0 AND negative (error) cases
       Serial.println("Send failed - connection may be broken.");
-      tcpClient.stop();     // Force-close so connectToServer() cleanly reconnects next loop
+      tcpClient.stop();
       return;
     }
 
-    sentSoFar += (size_t)justSent;   // Safe to convert now, since we know it's positive
+    sentSoFar += (size_t)justSent;
   }
 }
 
 
 // -----------------------------------------------------------------
+//  Function: isValidJpeg
+//  What it does: every valid JPEG file must start with bytes
+//  0xFF 0xD8 and end with bytes 0xFF 0xD9 - part of the JPEG format
+//  itself. A corrupted/merged frame (two frames stuck together
+//  because the camera only has one shared internal buffer) usually
+//  fails this check, so we use it to catch and discard bad frames
+//  before wasting time sending them.
+// -----------------------------------------------------------------
+bool isValidJpeg(const uint8_t* data, size_t length) {
+  if (length < 4) {
+    return false;   // Too short to even contain the start/end markers
+  }
+
+  bool startsCorrectly = (data[0] == 0xFF && data[1] == 0xD8);
+  bool endsCorrectly   = (data[length - 2] == 0xFF && data[length - 1] == 0xD9);
+
+  return startsCorrectly && endsCorrectly;
+}
+
+
+// -----------------------------------------------------------------
 //  Function: captureAndSendFrame
-//  What it does: grabs one JPEG frame, sends it to the PC using the
-//  reliable sendAllBytes function, and measures how long each stage
-//  (capture vs. send) actually takes.
+//  What it does: grabs one JPEG frame, discards it if it's corrupt,
+//  otherwise sends it to the PC and measures timing.
 // -----------------------------------------------------------------
 void captureAndSendFrame() {
   unsigned long startTime = millis();   // Timestamp before we start capturing
@@ -169,6 +186,14 @@ void captureAndSendFrame() {
 
   if (!frameBuffer) {
     Serial.println("Frame capture failed.");
+    return;
+  }
+
+  // Reject corrupted/merged frames before wasting time sending them
+  if (!isValidJpeg(frameBuffer->buf, frameBuffer->len)) {
+    Serial.print("Discarded corrupt frame, size was: ");
+    Serial.println(frameBuffer->len);
+    esp_camera_fb_return(frameBuffer);   // Still must return it, even though we're skipping it
     return;
   }
 
