@@ -1,52 +1,73 @@
 # =================================================================
-#  PC SERVER - Part 1: Receive frames from ESP32-CAM over TCP
+#  PC SERVER - Part 2: Receive frames AND display them live
 # =================================================================
 
-import socket   # Built-in Python library for raw network communication
-import struct   # Helps convert between raw bytes and Python numbers
+import socket
+import struct
+import numpy as np    # NEW: lets us treat raw bytes as a numeric image array
+import cv2             # NEW: OpenCV - decodes JPEG bytes and shows them in a window
 
 # -----------------------------------------------------------------
 #  Configuration - must match the ESP32 code exactly
 # -----------------------------------------------------------------
-LISTEN_IP   = "0.0.0.0"   # "0.0.0.0" means: accept connections on any network interface of this Mac
-LISTEN_PORT = 8000          # Must match PC_PORT in the Arduino code
+LISTEN_IP   = "0.0.0.0"
+LISTEN_PORT = 8000
 
 
 # -----------------------------------------------------------------
 #  Function: receive_exact
-#  What it does: TCP doesn't guarantee that one call to recv()
-#  returns exactly the number of bytes you asked for - it might
-#  return less. This function keeps calling recv() in a loop until
-#  it has collected exactly num_bytes, no more, no less.
+#  (unchanged from before)
 # -----------------------------------------------------------------
 def receive_exact(connection, num_bytes):
-    data = b""   # b"" = an empty sequence of bytes (as opposed to "" which is empty text)
+    data = b""
 
     while len(data) < num_bytes:
-        chunk = connection.recv(num_bytes - len(data))   # Ask for only what's still missing
+        chunk = connection.recv(num_bytes - len(data))
 
         if not chunk:
-            # An empty chunk means the other side closed the connection mid-frame
             raise ConnectionError("Connection closed while receiving data.")
 
-        data += chunk   # Append what we got to what we already have
+        data += chunk
 
     return data
 
 
 # -----------------------------------------------------------------
 #  Function: receive_one_frame
-#  What it does: reads exactly one frame from the connection, using
-#  the same [4 bytes size][JPEG bytes] format the ESP32 sends.
-#  Returns the JPEG bytes.
+#  (unchanged from before)
 # -----------------------------------------------------------------
 def receive_one_frame(connection):
-    size_bytes = receive_exact(connection, 4)          # Step 1: read exactly 4 raw bytes
-    frame_size = struct.unpack("<I", size_bytes)[0]     # Step 2: interpret those 4 bytes as a number
+    size_bytes = receive_exact(connection, 4)
+    frame_size = struct.unpack("<I", size_bytes)[0]
 
-    jpeg_bytes = receive_exact(connection, frame_size)  # Step 3: read exactly that many more bytes
+    jpeg_bytes = receive_exact(connection, frame_size)
 
     return jpeg_bytes
+
+
+# -----------------------------------------------------------------
+#  Function: decode_and_show
+#  What it does: takes raw JPEG bytes, turns them into an actual
+#  image OpenCV can display, and shows it in a live window.
+# -----------------------------------------------------------------
+def decode_and_show(jpeg_bytes):
+    # Step 1: treat the raw JPEG bytes as a 1D array of numbers (0-255 each)
+    jpeg_array = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+
+    # Step 2: decode that array as an actual image (rows x columns x color channels)
+    image = cv2.imdecode(jpeg_array, cv2.IMREAD_COLOR)
+
+    if image is None:
+        # Happens if a frame arrived corrupted/incomplete - skip it, don't crash
+        print("Warning: failed to decode a frame, skipping.")
+        return
+
+    cv2.imshow("ESP32-CAM Live Feed", image)   # Opens/updates a window with this image
+
+    cv2.waitKey(1)
+    # IMPORTANT: OpenCV windows need this call to actually redraw and process
+    # events (like being moved or closed). The "1" means "wait up to 1ms" -
+    # we don't want to pause our loop, just give the window a chance to update.
 
 
 # =================================================================
@@ -55,23 +76,13 @@ def receive_one_frame(connection):
 
 def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # AF_INET     = we're using regular IPv4 addresses (like 192.168.0.173)
-    # SOCK_STREAM = we want TCP (a reliable, ordered byte stream) - not UDP
-
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # Without this, restarting the script quickly after stopping it can fail
-    # with "port already in use" for about a minute - this avoids that.
-
-    server_socket.bind((LISTEN_IP, LISTEN_PORT))   # Claim this IP+port combination
-    server_socket.listen(1)                          # Start accepting connections, 1 waiting at a time
+    server_socket.bind((LISTEN_IP, LISTEN_PORT))
+    server_socket.listen(1)
 
     print(f"Listening on port {LISTEN_PORT}, waiting for ESP32-CAM to connect...")
 
     connection, address = server_socket.accept()
-    # This line BLOCKS (pauses) here until the ESP32-CAM actually connects.
-    # connection = a new socket specifically for talking to that one device
-    # address    = a tuple like ('192.168.0.176', some_port) - who connected
-
     print(f"ESP32-CAM connected from {address}")
 
     frame_count = 0
@@ -80,17 +91,19 @@ def main():
         try:
             jpeg_bytes = receive_one_frame(connection)
             frame_count += 1
+
+            decode_and_show(jpeg_bytes)   # NEW: display instead of just printing size
+
             print(f"Received frame #{frame_count}, size in bytes: {len(jpeg_bytes)}")
 
         except ConnectionError:
             print("ESP32-CAM disconnected.")
-            break   # Exit the loop cleanly if the connection drops
+            break
 
     connection.close()
     server_socket.close()
+    cv2.destroyAllWindows()   # NEW: close the display window cleanly when we're done
 
 
 if __name__ == "__main__":
-    # This check means: only run main() if this file is executed directly,
-    # not if it gets imported into another script later.
     main()
