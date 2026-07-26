@@ -1,5 +1,5 @@
 // =================================================================
-//  ESP32-CAM  -  PART 3f: Send Frames to PC over TCP (with JPEG validation)
+//  ESP32-CAM  -  PART 3g: Send Frames to PC over TCP (dual buffer + size check)
 // =================================================================
 
 #include <WiFi.h>
@@ -59,6 +59,10 @@ void connectToWiFi() {
 
 // -----------------------------------------------------------------
 //  Function: initCamera
+//  What it does: configures the camera driver. Uses TWO frame
+//  buffers so the sensor can write a new frame into one buffer
+//  while the other is still being read/sent - this prevents the
+//  buffer-tearing (merged frames) we saw with a single buffer.
 // -----------------------------------------------------------------
 bool initCamera() {
   camera_config_t config;
@@ -85,9 +89,10 @@ bool initCamera() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_VGA;   // 640x480
-  config.jpeg_quality  = 10;              // Lower = higher quality, less compression artifacts
-  config.fb_count      = 1;
+  config.frame_size   = FRAMESIZE_VGA;         // 640x480
+  config.jpeg_quality  = 10;                    // Lower = higher quality, less compression artifacts
+  config.fb_count      = 2;                     // CHANGED: was 1 - two buffers prevent write/read overlap
+  config.grab_mode     = CAMERA_GRAB_LATEST;    // NEW: always hand us the newest complete frame
 
   esp_err_t result = esp_camera_init(&config);
 
@@ -156,15 +161,17 @@ void sendAllBytes(const uint8_t* data, size_t totalLength) {
 // -----------------------------------------------------------------
 //  Function: isValidJpeg
 //  What it does: every valid JPEG file must start with bytes
-//  0xFF 0xD8 and end with bytes 0xFF 0xD9 - part of the JPEG format
-//  itself. A corrupted/merged frame (two frames stuck together
-//  because the camera only has one shared internal buffer) usually
-//  fails this check, so we use it to catch and discard bad frames
-//  before wasting time sending them.
+//  0xFF 0xD8 and end with bytes 0xFF 0xD9. We also reject frames
+//  that are unusually large - a normal single VGA JPEG at our
+//  quality setting runs ~10,000-18,000 bytes, so anything much
+//  bigger is almost certainly two frames stuck together, even if
+//  the start/end markers happen to look valid on their own.
 // -----------------------------------------------------------------
 bool isValidJpeg(const uint8_t* data, size_t length) {
-  if (length < 4) {
-    return false;   // Too short to even contain the start/end markers
+  const size_t MAX_REASONABLE_SIZE = 25000;   // Sanity ceiling based on frames observed in testing
+
+  if (length < 4 || length > MAX_REASONABLE_SIZE) {
+    return false;
   }
 
   bool startsCorrectly = (data[0] == 0xFF && data[1] == 0xD8);
@@ -176,8 +183,8 @@ bool isValidJpeg(const uint8_t* data, size_t length) {
 
 // -----------------------------------------------------------------
 //  Function: captureAndSendFrame
-//  What it does: grabs one JPEG frame, discards it if it's corrupt,
-//  otherwise sends it to the PC and measures timing.
+//  What it does: grabs one JPEG frame, discards it if it's corrupt
+//  or oversized, otherwise sends it to the PC and measures timing.
 // -----------------------------------------------------------------
 void captureAndSendFrame() {
   unsigned long startTime = millis();   // Timestamp before we start capturing
