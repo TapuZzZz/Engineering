@@ -1,15 +1,17 @@
 // =================================================================
-//  ESP32-CAM  -  FINAL VERSION (multi-network, robust Wi-Fi retry,
-//  LED status indicator)
+//  ESP32-CAM  -  FINAL VERSION (persistent retry, dimmed LED)
 //  Acts as a TCP SERVER, advertised via mDNS as "esp32cam.local".
-//  Tries each known Wi-Fi network in order until one connects.
-//  The built-in flash LED turns on solid once connected, so status
-//  is visible even without a Serial Monitor attached.
+//  Keeps retrying the network list FOREVER instead of halting -
+//  necessary because of weak signal through concrete walls.
+//  Status LED uses PWM dimming (not full digitalWrite HIGH) to
+//  avoid heat buildup - this LED is the camera's bright flash LED.
+//  Uses the newer ledcAttach()/ledcWrite(pin, ...) API (Arduino
+//  ESP32 core 3.x) instead of the older ledcSetup/ledcAttachPin.
 // =================================================================
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
-#include "esp_camera.h"   // Library that controls the OV2640 camera chip itself
+#include "esp_camera.h"
 
 // -----------------------------------------------------------------
 //  Camera pin map - fixed by the physical wiring of the
@@ -33,15 +35,19 @@
 #define PCLK_GPIO_NUM     22
 
 // -----------------------------------------------------------------
-//  Status LED - the built-in white flash LED on AI Thinker
-//  ESP32-CAM. Turns on solid once Wi-Fi connects successfully, so
-//  connection status is visible without a Serial Monitor attached.
+//  Status LED - PWM dimmed instead of full digitalWrite HIGH.
+//  This is the camera's bright flash LED, meant for brief full-power
+//  bursts, not sustained use - dimming keeps it cool even when left
+//  on for a few seconds.
 // -----------------------------------------------------------------
 #define STATUS_LED_PIN 4
+const int LED_PWM_FREQUENCY  = 5000;   // 5kHz - fast enough to avoid visible flicker
+const int LED_PWM_RESOLUTION = 8;      // 8-bit = values from 0 (off) to 255 (full brightness)
+const int LED_DIM_BRIGHTNESS = 12;     // ~5% brightness - visible but stays cool to the touch
 
 // -----------------------------------------------------------------
-//  Known Wi-Fi networks - the board tries each one in order until
-//  it successfully connects. Add more rows here as needed.
+//  Known Wi-Fi networks - tries each one in order, cycling forever
+//  until one connects. Add more rows here as needed.
 // -----------------------------------------------------------------
 struct WifiNetwork {
   const char* ssid;
@@ -49,8 +55,8 @@ struct WifiNetwork {
 };
 
 WifiNetwork knownNetworks[] = {
-  {"TP-Link- Salon",           "03032007"},
   {"Lagami",                   "0547692269"},
+  {"TP-Link- Salon",           "03032007"},
   {"Artyom Kiselhof's iPhone", "artyom0303"}
 };
 
@@ -62,65 +68,78 @@ WiFiClient pcConnection;
 
 // -----------------------------------------------------------------
 //  Function: connectToWiFi
-//  What it does: explicitly resets the Wi-Fi driver's internal
-//  state before each connection attempt, which fixes the
-//  "sta is connecting, cannot set config" error seen when switching
-//  networks too quickly. Tries each network in knownNetworks[] in
-//  order. Turns the status LED on solid once connected.
+//  What it does: keeps cycling through knownNetworks[] FOREVER
+//  until one connects. Dims the status LED while trying (blinking
+//  at low brightness), gives a brief dim confirmation flash once
+//  connected, then turns it off.
 // -----------------------------------------------------------------
 void connectToWiFi() {
   WiFi.mode(WIFI_STA);
   delay(100);
 
   int networkCount = sizeof(knownNetworks) / sizeof(knownNetworks[0]);
+  int roundNumber = 0;
 
-  for (int i = 0; i < networkCount; i++) {
-    Serial.print("Trying network: ");
-    Serial.println(knownNetworks[i].ssid);
+  while (true) {
+    roundNumber++;
+    Serial.print("--- Connection round ");
+    Serial.print(roundNumber);
+    Serial.println(" ---");
 
-    WiFi.disconnect(true, true);
-    delay(300);
-
-    WiFi.begin(knownNetworks[i].ssid, knownNetworks[i].password);
-
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      delay(500);
-      Serial.print(".");
-      attempts++;
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("");
-      Serial.println("Connected!");
-      Serial.print("Network: ");
+    for (int i = 0; i < networkCount; i++) {
+      Serial.print("Trying network: ");
       Serial.println(knownNetworks[i].ssid);
-      Serial.print("ESP32-CAM IP address: ");
-      Serial.println(WiFi.localIP());
 
-      if (MDNS.begin("esp32cam")) {
-        Serial.println("mDNS responder started: esp32cam.local");
-      } else {
-        Serial.println("mDNS setup failed - PC will need the raw IP instead.");
+      WiFi.disconnect(true, true);
+      delay(300);
+
+      WiFi.begin(knownNetworks[i].ssid, knownNetworks[i].password);
+
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && attempts < 30) {   // ~15 seconds for weak signal
+        delay(500);
+        Serial.print(".");
+        ledcWrite(STATUS_LED_PIN, (attempts % 2) ? LED_DIM_BRIGHTNESS : 0);
+        attempts++;
       }
 
-      digitalWrite(STATUS_LED_PIN, HIGH);   // NEW: solid ON = connected successfully
-      return;
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("");
+        Serial.println("Connected!");
+        Serial.print("Network: ");
+        Serial.println(knownNetworks[i].ssid);
+        Serial.print("ESP32-CAM IP address: ");
+        Serial.println(WiFi.localIP());
+
+        if (MDNS.begin("esp32cam")) {
+          Serial.println("mDNS responder started: esp32cam.local");
+        } else {
+          Serial.println("mDNS setup failed - PC will need the raw IP instead.");
+        }
+
+        ledcWrite(STATUS_LED_PIN, LED_DIM_BRIGHTNESS);   // Brief dim confirmation
+        delay(500);
+        ledcWrite(STATUS_LED_PIN, 0);                     // Then off
+        return;
+      }
+
+      Serial.println("");
+      Serial.print("Failed to connect to: ");
+      Serial.println(knownNetworks[i].ssid);
     }
 
-    Serial.println("");
-    Serial.print("Failed to connect to: ");
-    Serial.println(knownNetworks[i].ssid);
+    Serial.println("Completed a full round with no success - trying again...");
+    ledcWrite(STATUS_LED_PIN, 0);
+    delay(1000);
   }
-
-  Serial.println("Could not connect to any known network. Halting.");
-  // LED stays OFF here - never turned on because we never connected
-  while (true) { delay(1000); }
 }
 
 
 // -----------------------------------------------------------------
 //  Function: initCamera
+//  What it does: configures the camera driver. Uses TWO frame
+//  buffers so the sensor can write a new frame into one buffer
+//  while the other is still being read/sent.
 // -----------------------------------------------------------------
 bool initCamera() {
   camera_config_t config;
@@ -147,10 +166,10 @@ bool initCamera() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_VGA;
-  config.jpeg_quality  = 10;
-  config.fb_count      = 2;
-  config.grab_mode     = CAMERA_GRAB_LATEST;
+  config.frame_size   = FRAMESIZE_VGA;         // 640x480
+  config.jpeg_quality  = 10;                    // Lower = higher quality, less compression artifacts
+  config.fb_count      = 2;                     // Two buffers prevent write/read overlap
+  config.grab_mode     = CAMERA_GRAB_LATEST;    // Always hand us the newest complete frame
 
   esp_err_t result = esp_camera_init(&config);
 
@@ -167,6 +186,11 @@ bool initCamera() {
 
 // -----------------------------------------------------------------
 //  Function: sendAllBytes
+//  What it does: TCP write() is not guaranteed to send every byte
+//  in one call. This function keeps sending the remaining bytes
+//  until everything is out, and correctly detects failure using a
+//  SIGNED type (so a -1 error return doesn't silently wrap around
+//  into a huge positive number).
 // -----------------------------------------------------------------
 void sendAllBytes(const uint8_t* data, size_t totalLength) {
   size_t sentSoFar = 0;
@@ -187,6 +211,11 @@ void sendAllBytes(const uint8_t* data, size_t totalLength) {
 
 // -----------------------------------------------------------------
 //  Function: isValidJpeg
+//  What it does: every valid JPEG file must start with bytes
+//  0xFF 0xD8 and end with bytes 0xFF 0xD9. We also reject frames
+//  that are unusually large - a normal single VGA JPEG at our
+//  quality setting runs ~10,000-18,000 bytes, so anything much
+//  bigger is almost certainly two frames stuck together.
 // -----------------------------------------------------------------
 bool isValidJpeg(const uint8_t* data, size_t length) {
   const size_t MAX_REASONABLE_SIZE = 25000;
@@ -204,6 +233,8 @@ bool isValidJpeg(const uint8_t* data, size_t length) {
 
 // -----------------------------------------------------------------
 //  Function: captureAndSendFrame
+//  What it does: grabs one JPEG frame, discards it if it's corrupt
+//  or oversized, otherwise sends it to the PC and measures timing.
 // -----------------------------------------------------------------
 void captureAndSendFrame() {
   unsigned long startTime = millis();
@@ -243,6 +274,22 @@ void captureAndSendFrame() {
 }
 
 
+// -----------------------------------------------------------------
+//  Function: checkWiFiStillConnected
+//  What it does: with a weak/unstable signal, the connection can
+//  drop mid-session, not just at startup. This checks every loop
+//  iteration and re-runs the full connect procedure if we've lost
+//  the network.
+// -----------------------------------------------------------------
+void checkWiFiStillConnected() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi connection lost - reconnecting...");
+    connectToWiFi();
+    tcpServer.begin();
+  }
+}
+
+
 // =================================================================
 //  MAIN PROGRAM
 // =================================================================
@@ -251,10 +298,16 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  pinMode(STATUS_LED_PIN, OUTPUT);
-  digitalWrite(STATUS_LED_PIN, LOW);   // Off until connected
+  // Set up PWM on the status LED pin - newer core 3.x API:
+  // ledcAttach(pin, freq, resolution) combines what used to be two
+  // separate calls (ledcSetup + ledcAttachPin), and ledcWrite takes
+  // the pin number directly instead of a channel number.
+  ledcAttach(STATUS_LED_PIN, LED_PWM_FREQUENCY, LED_PWM_RESOLUTION);
+  ledcWrite(STATUS_LED_PIN, 0);   // Start fully off
 
   connectToWiFi();
+
+  delay(200);   // Brief settle time before camera init, reduces I2C warnings on wake-up
 
   if (!initCamera()) {
     Serial.println("Stopping - camera did not initialize.");
@@ -266,6 +319,8 @@ void setup() {
 }
 
 void loop() {
+  checkWiFiStillConnected();
+
   if (!pcConnection || !pcConnection.connected()) {
     pcConnection = tcpServer.available();
     if (!pcConnection) {

@@ -1,7 +1,8 @@
 # =================================================================
 #  PC MAIN CONTROLLER - Camera receive (via mDNS) + FACE detection
-#  + motor commands to ESP32 DevKit. Laser fires ONLY while
-#  spacebar is held down by a human.
+#  + motor commands to ESP32 DevKit (via mDNS). Laser fires ONLY
+#  while spacebar is held down by a human. Sends a "locked" flag
+#  so the DevKit can play an alert sound at the moment of lock.
 # =================================================================
 
 import socket
@@ -11,12 +12,12 @@ import numpy as np
 import cv2
 
 # -----------------------------------------------------------------
-#  Configuration
+#  Configuration - both boards found by name, no IP addresses needed
 # -----------------------------------------------------------------
 CAMERA_HOST = "esp32cam.local"
 CAMERA_PORT = 8000
 
-MOTOR_ESP_IP   = "192.168.0.116"
+MOTOR_ESP_HOST = "esp32motors.local"
 MOTOR_ESP_PORT = 9000
 
 FRAME_WIDTH  = 640
@@ -294,11 +295,15 @@ def check_laser_key(key_code):
 
 # -----------------------------------------------------------------
 #  Function: send_motor_command
+#  What it does: sends "pan,tilt,laser,locked\n" - 4 comma-separated
+#  fields. The locked field tells the DevKit whether a face is
+#  currently tracked, so it can trigger the alert sound at the
+#  moment a lock begins. This MUST match the firmware's parser.
 # -----------------------------------------------------------------
-def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state):
-    command_line = f"{pan_angle:.1f},{tilt_angle:.1f},{laser_state}\n"
+def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state, locked_state):
+    command_line = f"{pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}\n"
     motor_socket.sendall(command_line.encode("utf-8"))
-    print(f"[SENT] {pan_angle:.1f},{tilt_angle:.1f},{laser_state}")
+    print(f"[SENT] {pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}")
 
 
 # -----------------------------------------------------------------
@@ -340,9 +345,9 @@ def main():
     camera_connection.connect((CAMERA_HOST, CAMERA_PORT))
     print("Connected to ESP32-CAM.")
 
-    print("Connecting to motor controller...")
+    print(f"Connecting to motor controller at {MOTOR_ESP_HOST}...")
     motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    motor_socket.connect((MOTOR_ESP_IP, MOTOR_ESP_PORT))
+    motor_socket.connect((MOTOR_ESP_HOST, MOTOR_ESP_PORT))
     print("Connected to motor controller.")
 
     current_pan  = 90.0
@@ -378,10 +383,12 @@ def main():
             else:
                 status_text = "HOLDING"
 
+        locked_state = 1 if box is not None else 0
+
         try:
             key_code = draw_overlay(image, box, f"{status_text} | pan={current_pan:.1f} tilt={current_tilt:.1f}")
             laser_state = check_laser_key(key_code)
-            send_motor_command(motor_socket, current_pan, current_tilt, laser_state)
+            send_motor_command(motor_socket, current_pan, current_tilt, laser_state, locked_state)
         except (ConnectionError, OSError) as motor_error:
             print(f"Motor command failed (will retry next frame): {motor_error}")
 
