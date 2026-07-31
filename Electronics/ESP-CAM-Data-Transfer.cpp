@@ -1,8 +1,14 @@
 // =================================================================
-//  ESP32-CAM  -  PART 3g: Send Frames to PC over TCP (dual buffer + size check)
+//  ESP32-CAM  -  FINAL VERSION (multi-network, robust Wi-Fi retry,
+//  LED status indicator)
+//  Acts as a TCP SERVER, advertised via mDNS as "esp32cam.local".
+//  Tries each known Wi-Fi network in order until one connects.
+//  The built-in flash LED turns on solid once connected, so status
+//  is visible even without a Serial Monitor attached.
 // =================================================================
 
 #include <WiFi.h>
+#include <ESPmDNS.h>
 #include "esp_camera.h"   // Library that controls the OV2640 camera chip itself
 
 // -----------------------------------------------------------------
@@ -27,42 +33,94 @@
 #define PCLK_GPIO_NUM     22
 
 // -----------------------------------------------------------------
-//  Network configuration
+//  Status LED - the built-in white flash LED on AI Thinker
+//  ESP32-CAM. Turns on solid once Wi-Fi connects successfully, so
+//  connection status is visible without a Serial Monitor attached.
 // -----------------------------------------------------------------
-const char* WIFI_SSID     = "TP-Link- Salon";
-const char* WIFI_PASSWORD = "03032007";
+#define STATUS_LED_PIN 4
 
-const char* PC_IP_ADDRESS = "192.168.0.173";
-const uint16_t PC_PORT    = 8000;
+// -----------------------------------------------------------------
+//  Known Wi-Fi networks - the board tries each one in order until
+//  it successfully connects. Add more rows here as needed.
+// -----------------------------------------------------------------
+struct WifiNetwork {
+  const char* ssid;
+  const char* password;
+};
 
-WiFiClient tcpClient;   // One reusable TCP connection object
+WifiNetwork knownNetworks[] = {
+  {"TP-Link- Salon",           "03032007"},
+  {"Lagami",                   "0547692269"},
+  {"Artyom Kiselhof's iPhone", "artyom0303"}
+};
+
+const uint16_t SERVER_PORT = 8000;
+
+WiFiServer tcpServer(SERVER_PORT);
+WiFiClient pcConnection;
 
 
 // -----------------------------------------------------------------
 //  Function: connectToWiFi
+//  What it does: explicitly resets the Wi-Fi driver's internal
+//  state before each connection attempt, which fixes the
+//  "sta is connecting, cannot set config" error seen when switching
+//  networks too quickly. Tries each network in knownNetworks[] in
+//  order. Turns the status LED on solid once connected.
 // -----------------------------------------------------------------
 void connectToWiFi() {
-  Serial.println("Connecting to network...");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.mode(WIFI_STA);
+  delay(100);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  int networkCount = sizeof(knownNetworks) / sizeof(knownNetworks[0]);
+
+  for (int i = 0; i < networkCount; i++) {
+    Serial.print("Trying network: ");
+    Serial.println(knownNetworks[i].ssid);
+
+    WiFi.disconnect(true, true);
+    delay(300);
+
+    WiFi.begin(knownNetworks[i].ssid, knownNetworks[i].password);
+
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+      delay(500);
+      Serial.print(".");
+      attempts++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("");
+      Serial.println("Connected!");
+      Serial.print("Network: ");
+      Serial.println(knownNetworks[i].ssid);
+      Serial.print("ESP32-CAM IP address: ");
+      Serial.println(WiFi.localIP());
+
+      if (MDNS.begin("esp32cam")) {
+        Serial.println("mDNS responder started: esp32cam.local");
+      } else {
+        Serial.println("mDNS setup failed - PC will need the raw IP instead.");
+      }
+
+      digitalWrite(STATUS_LED_PIN, HIGH);   // NEW: solid ON = connected successfully
+      return;
+    }
+
+    Serial.println("");
+    Serial.print("Failed to connect to: ");
+    Serial.println(knownNetworks[i].ssid);
   }
 
-  Serial.println("");
-  Serial.println("Connected!");
-  Serial.print("ESP32-CAM IP address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("Could not connect to any known network. Halting.");
+  // LED stays OFF here - never turned on because we never connected
+  while (true) { delay(1000); }
 }
 
 
 // -----------------------------------------------------------------
 //  Function: initCamera
-//  What it does: configures the camera driver. Uses TWO frame
-//  buffers so the sensor can write a new frame into one buffer
-//  while the other is still being read/sent - this prevents the
-//  buffer-tearing (merged frames) we saw with a single buffer.
 // -----------------------------------------------------------------
 bool initCamera() {
   camera_config_t config;
@@ -89,10 +147,10 @@ bool initCamera() {
 
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_VGA;         // 640x480
-  config.jpeg_quality  = 10;                    // Lower = higher quality, less compression artifacts
-  config.fb_count      = 2;                     // CHANGED: was 1 - two buffers prevent write/read overlap
-  config.grab_mode     = CAMERA_GRAB_LATEST;    // NEW: always hand us the newest complete frame
+  config.frame_size   = FRAMESIZE_VGA;
+  config.jpeg_quality  = 10;
+  config.fb_count      = 2;
+  config.grab_mode     = CAMERA_GRAB_LATEST;
 
   esp_err_t result = esp_camera_init(&config);
 
@@ -108,48 +166,17 @@ bool initCamera() {
 
 
 // -----------------------------------------------------------------
-//  Function: connectToServer
-//  What it does: opens a TCP connection to the PC if not already
-//  connected, and disables Nagle's algorithm so small writes (like
-//  our 4-byte size header) go out immediately.
-// -----------------------------------------------------------------
-bool connectToServer() {
-  if (tcpClient.connected()) {
-    return true;
-  }
-
-  Serial.println("Connecting to PC server...");
-  bool success = tcpClient.connect(PC_IP_ADDRESS, PC_PORT);
-
-  if (!success) {
-    Serial.println("Failed to connect to PC server.");
-    return false;
-  }
-
-  tcpClient.setNoDelay(true);   // Disable Nagle's algorithm - send immediately, don't batch small writes
-
-  Serial.println("Connected to PC server.");
-  return true;
-}
-
-
-// -----------------------------------------------------------------
 //  Function: sendAllBytes
-//  What it does: TCP write() is not guaranteed to send every byte
-//  in one call. This function keeps sending the remaining bytes
-//  until everything is out, and correctly detects failure using a
-//  SIGNED type (so a -1 error return doesn't silently wrap around
-//  into a huge positive number).
 // -----------------------------------------------------------------
 void sendAllBytes(const uint8_t* data, size_t totalLength) {
   size_t sentSoFar = 0;
 
   while (sentSoFar < totalLength) {
-    int justSent = tcpClient.write(data + sentSoFar, totalLength - sentSoFar);
+    int justSent = pcConnection.write(data + sentSoFar, totalLength - sentSoFar);
 
-    if (justSent <= 0) {   // Catches both 0 AND negative (error) cases
+    if (justSent <= 0) {
       Serial.println("Send failed - connection may be broken.");
-      tcpClient.stop();
+      pcConnection.stop();
       return;
     }
 
@@ -160,15 +187,9 @@ void sendAllBytes(const uint8_t* data, size_t totalLength) {
 
 // -----------------------------------------------------------------
 //  Function: isValidJpeg
-//  What it does: every valid JPEG file must start with bytes
-//  0xFF 0xD8 and end with bytes 0xFF 0xD9. We also reject frames
-//  that are unusually large - a normal single VGA JPEG at our
-//  quality setting runs ~10,000-18,000 bytes, so anything much
-//  bigger is almost certainly two frames stuck together, even if
-//  the start/end markers happen to look valid on their own.
 // -----------------------------------------------------------------
 bool isValidJpeg(const uint8_t* data, size_t length) {
-  const size_t MAX_REASONABLE_SIZE = 25000;   // Sanity ceiling based on frames observed in testing
+  const size_t MAX_REASONABLE_SIZE = 25000;
 
   if (length < 4 || length > MAX_REASONABLE_SIZE) {
     return false;
@@ -183,11 +204,9 @@ bool isValidJpeg(const uint8_t* data, size_t length) {
 
 // -----------------------------------------------------------------
 //  Function: captureAndSendFrame
-//  What it does: grabs one JPEG frame, discards it if it's corrupt
-//  or oversized, otherwise sends it to the PC and measures timing.
 // -----------------------------------------------------------------
 void captureAndSendFrame() {
-  unsigned long startTime = millis();   // Timestamp before we start capturing
+  unsigned long startTime = millis();
 
   camera_fb_t* frameBuffer = esp_camera_fb_get();
 
@@ -196,26 +215,24 @@ void captureAndSendFrame() {
     return;
   }
 
-  // Reject corrupted/merged frames before wasting time sending them
   if (!isValidJpeg(frameBuffer->buf, frameBuffer->len)) {
     Serial.print("Discarded corrupt frame, size was: ");
     Serial.println(frameBuffer->len);
-    esp_camera_fb_return(frameBuffer);   // Still must return it, even though we're skipping it
+    esp_camera_fb_return(frameBuffer);
     return;
   }
 
-  unsigned long captureTime = millis();   // Timestamp right after capture finished
+  unsigned long captureTime = millis();
 
   uint32_t frameSize = frameBuffer->len;
 
-  sendAllBytes((uint8_t*)&frameSize, sizeof(frameSize));   // Send the 4-byte size, fully
-  sendAllBytes(frameBuffer->buf, frameBuffer->len);         // Send the JPEG bytes, fully
+  sendAllBytes((uint8_t*)&frameSize, sizeof(frameSize));
+  sendAllBytes(frameBuffer->buf, frameBuffer->len);
 
-  unsigned long sendTime = millis();   // Timestamp right after sending finished
+  unsigned long sendTime = millis();
 
   esp_camera_fb_return(frameBuffer);
 
-  // Report how long each stage took, in milliseconds
   Serial.print("Sent frame, size: ");
   Serial.print(frameSize);
   Serial.print(" bytes | capture: ");
@@ -234,17 +251,31 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  pinMode(STATUS_LED_PIN, OUTPUT);
+  digitalWrite(STATUS_LED_PIN, LOW);   // Off until connected
+
   connectToWiFi();
 
   if (!initCamera()) {
     Serial.println("Stopping - camera did not initialize.");
     while (true) { delay(1000); }
   }
+
+  tcpServer.begin();
+  Serial.println("Camera server ready, waiting for PC to connect...");
 }
 
 void loop() {
-  if (connectToServer()) {
-    captureAndSendFrame();
+  if (!pcConnection || !pcConnection.connected()) {
+    pcConnection = tcpServer.available();
+    if (!pcConnection) {
+      delay(50);
+      return;
+    }
+    pcConnection.setNoDelay(true);
+    Serial.println("PC connected.");
   }
-  delay(25);   // Target ~22-23 FPS: ~19ms processing + 25ms delay
+
+  captureAndSendFrame();
+  delay(25);
 }

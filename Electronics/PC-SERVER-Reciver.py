@@ -1,8 +1,7 @@
 # =================================================================
-#  PC MAIN CONTROLLER - Camera receive + FACE detection + motor
-#  commands to ESP32 DevKit. Laser fires ONLY while spacebar is
-#  held down by a human - never triggered automatically by
-#  detection or tracking logic.
+#  PC MAIN CONTROLLER - Camera receive (via mDNS) + FACE detection
+#  + motor commands to ESP32 DevKit. Laser fires ONLY while
+#  spacebar is held down by a human.
 # =================================================================
 
 import socket
@@ -14,8 +13,8 @@ import cv2
 # -----------------------------------------------------------------
 #  Configuration
 # -----------------------------------------------------------------
-CAMERA_LISTEN_IP   = "0.0.0.0"
-CAMERA_LISTEN_PORT = 8000
+CAMERA_HOST = "esp32cam.local"
+CAMERA_PORT = 8000
 
 MOTOR_ESP_IP   = "192.168.0.116"
 MOTOR_ESP_PORT = 9000
@@ -287,12 +286,6 @@ def compute_scan_command(current_pan):
 
 # -----------------------------------------------------------------
 #  Function: check_laser_key
-#  What it does: checks if the spacebar was detected as pressed in
-#  this frame's key-poll. Returns 1 if held, 0 otherwise - matches
-#  the "pan,tilt,laser" protocol's laser field. This is the ONLY
-#  place in the entire system that can set laser=1 - it requires a
-#  live human keypress, every single frame, with no memory between
-#  frames.
 # -----------------------------------------------------------------
 def check_laser_key(key_code):
     SPACEBAR = 32
@@ -310,10 +303,6 @@ def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state):
 
 # -----------------------------------------------------------------
 #  Function: draw_overlay
-#  What it does: draws the tracking view AND polls for a keypress
-#  in this same frame, returning the key code so the caller can
-#  decide the laser state. Combined here because cv2.waitKey is
-#  what actually processes the window's key events.
 # -----------------------------------------------------------------
 def draw_overlay(image, box, status_text):
     center_x, center_y = FRAME_WIDTH // 2, FRAME_HEIGHT // 2
@@ -346,19 +335,15 @@ def main():
     detector = load_face_detector()
     print("Face detector loaded.")
 
+    print(f"Connecting to camera at {CAMERA_HOST}...")
+    camera_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    camera_connection.connect((CAMERA_HOST, CAMERA_PORT))
+    print("Connected to ESP32-CAM.")
+
     print("Connecting to motor controller...")
     motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     motor_socket.connect((MOTOR_ESP_IP, MOTOR_ESP_PORT))
     print("Connected to motor controller.")
-
-    camera_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    camera_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    camera_server.bind((CAMERA_LISTEN_IP, CAMERA_LISTEN_PORT))
-    camera_server.listen(1)
-    print(f"Listening on port {CAMERA_LISTEN_PORT} for ESP32-CAM...")
-
-    camera_connection, camera_address = camera_server.accept()
-    print(f"ESP32-CAM connected from {camera_address}")
 
     current_pan  = 90.0
     current_tilt = 90.0
@@ -401,7 +386,6 @@ def main():
             print(f"Motor command failed (will retry next frame): {motor_error}")
 
     camera_connection.close()
-    camera_server.close()
     motor_socket.close()
     cv2.destroyAllWindows()
 
