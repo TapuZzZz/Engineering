@@ -1,9 +1,8 @@
 // =================================================================
-//  ESP32 DEVKIT  -  FINAL COMPLETE VERSION
-//  Combines: pan/tilt servos, laser (manual-only), DFPlayer alert
-//  sound on target lock, and TF-Luna distance sensor.
-//  Wi-Fi: tries a list of known networks forever until connected.
-//  Advertised via mDNS as "esp32motors.local".
+//  ESP32 DEVKIT  -  ABSOLUTE FINAL VERSION
+//  All components integrated: pan/tilt servos, laser (manual-only),
+//  DFPlayer alert sound on target lock, TF-Luna distance sensor,
+//  and a calibrated 1.8" ST7735 SPI TFT dashboard.
 //
 //  SAFETY: the laser is ONLY ever set by an explicit command field
 //  from the PC - nothing in this file turns it on automatically.
@@ -14,9 +13,12 @@
 #include <ESP32Servo.h>
 #include <HardwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
+#include <SPI.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ST7735.h>
 
 // -----------------------------------------------------------------
-//  Known Wi-Fi networks - add more rows here as needed.
+//  Known Wi-Fi networks
 // -----------------------------------------------------------------
 struct WifiNetwork {
   const char* ssid;
@@ -33,6 +35,7 @@ const uint16_t SERVER_PORT = 9000;
 
 WiFiServer tcpServer(SERVER_PORT);
 WiFiClient pcConnection;
+String connectedNetworkName = "---";
 
 // -----------------------------------------------------------------
 //  Servo pin assignment
@@ -47,22 +50,45 @@ Servo tiltServo;
 // -----------------------------------------------------------------
 //  DFPlayer wiring - UART channel 1
 // -----------------------------------------------------------------
-#define DFPLAYER_RX_PIN 17   // ESP32 RX <- DFPlayer TX
-#define DFPLAYER_TX_PIN 16   // ESP32 TX -> DFPlayer RX (through ~1k resistor)
+#define DFPLAYER_RX_PIN 17
+#define DFPLAYER_TX_PIN 16
 
 HardwareSerial dfPlayerSerial(1);
 DFRobotDFPlayerMini dfPlayer;
 bool dfPlayerIsReady = false;
 
 // -----------------------------------------------------------------
-//  TF-Luna wiring - UART channel 2
-//  Confirmed working: pin 2 (Luna RX) -> GPIO 25, pin 3 (Luna TX) -> GPIO 33
+//  TF-Luna wiring - UART channel 2 (confirmed: pin2->GPIO25, pin3->GPIO33)
 // -----------------------------------------------------------------
-#define LUNA_RX_PIN 33   // ESP32 RX <- TF-Luna TX (pin 3)
-#define LUNA_TX_PIN 25   // ESP32 TX -> TF-Luna RX (pin 2)
+#define LUNA_RX_PIN 33
+#define LUNA_TX_PIN 25
 
 HardwareSerial lunaSerial(2);
 int lastLunaDistanceCm = -1;
+
+// -----------------------------------------------------------------
+//  TFT display wiring - ST7735S, hardware SPI.
+//  Subclass exposes setColRowStart() (protected in the base
+//  library) so we can correct the chip's internal offset - needed
+//  because this clone's 132x162 internal memory doesn't line up
+//  exactly with its 128x160 visible area.
+// -----------------------------------------------------------------
+#define TFT_CS   5
+#define TFT_RST  15
+#define TFT_DC   27
+
+class TftWithOffset : public Adafruit_ST7735 {
+public:
+  TftWithOffset(SPIClass* spiBus, int8_t csPin, int8_t dcPin, int8_t rstPin)
+    : Adafruit_ST7735(spiBus, csPin, dcPin, rstPin) {}
+
+  using Adafruit_ST7735::setColRowStart;
+};
+
+TftWithOffset tft = TftWithOffset(&SPI, TFT_CS, TFT_DC, TFT_RST);
+
+const int8_t TFT_COL_OFFSET = 2;   // Calibrated value - confirmed working
+const int8_t TFT_ROW_OFFSET = 1;   // Calibrated value - confirmed working
 
 // -----------------------------------------------------------------
 //  Safety limits
@@ -83,15 +109,11 @@ float targetTiltAngle  = 90.0;
 const float MAX_DEGREES_PER_STEP = 4.0;
 
 // -----------------------------------------------------------------
-//  Laser state - controlled ONLY by explicit commands from the PC.
+//  Laser + lock state
 // -----------------------------------------------------------------
-bool laserShouldBeOn = false;
-
-// -----------------------------------------------------------------
-//  Lock state
-// -----------------------------------------------------------------
-bool isCurrentlyLocked  = false;
-bool wasLockedLastLoop  = false;
+bool laserShouldBeOn   = false;
+bool isCurrentlyLocked = false;
+bool wasLockedLastLoop = false;
 
 
 // -----------------------------------------------------------------
@@ -133,6 +155,8 @@ void connectToWiFi() {
         Serial.println(knownNetworks[i].ssid);
         Serial.print("ESP32 DevKit IP address: ");
         Serial.println(WiFi.localIP());
+
+        connectedNetworkName = knownNetworks[i].ssid;
 
         if (MDNS.begin("esp32motors")) {
           Serial.println("mDNS responder started: esp32motors.local");
@@ -226,7 +250,7 @@ float clampAngle(float value, float minValue, float maxValue) {
 // -----------------------------------------------------------------
 //  Function: parseAndSetTarget
 //  What it does: parses "pan,tilt,laser,locked" - 4 comma-separated
-//  fields. This MUST match exactly what the Python side sends.
+//  fields, matching what the Python side sends.
 // -----------------------------------------------------------------
 void parseAndSetTarget(String line) {
   int firstComma  = line.indexOf(',');
@@ -328,6 +352,106 @@ void checkWiFiStillConnected() {
 }
 
 
+// -----------------------------------------------------------------
+//  Function: initDashboard
+//  What it does: full manual reset sequence, slow reliable SPI,
+//  then init -> rotation -> offset, IN THAT EXACT ORDER (setting
+//  the offset before rotation gets silently overwritten by the
+//  library's own per-rotation default table).
+// -----------------------------------------------------------------
+void initDashboard() {
+  pinMode(TFT_RST, OUTPUT);
+  digitalWrite(TFT_RST, HIGH);
+  delay(100);
+  digitalWrite(TFT_RST, LOW);
+  delay(100);
+  digitalWrite(TFT_RST, HIGH);
+  delay(100);
+
+  SPI.begin(18, -1, 23, 5);   // SCK=18, MISO unused, MOSI=23, SS=5
+  SPI.setFrequency(1000000);   // 1MHz - reliable, plenty fast for a status dashboard
+
+  tft.initR(INITR_BLACKTAB);
+  tft.setRotation(1);                                    // Rotation FIRST
+  tft.setColRowStart(TFT_COL_OFFSET, TFT_ROW_OFFSET);     // Offset AFTER - confirmed working combo
+
+  tft.fillScreen(ST7735_BLACK);
+  tft.setTextColor(ST7735_WHITE);
+  tft.setTextSize(1);
+
+  tft.setCursor(2, 2);
+  tft.print("MISA TURRET DASHBOARD");
+
+  tft.drawFastHLine(0, 12, 160, ST7735_BLUE);
+
+  tft.setCursor(2, 18);  tft.print("Net:");
+  tft.setCursor(2, 30);  tft.print("Pan:");
+  tft.setCursor(2, 42);  tft.print("Tilt:");
+  tft.setCursor(2, 54);  tft.print("Range:");
+
+  tft.setCursor(90, 30); tft.print("Laser:");
+  tft.setCursor(90, 42); tft.print("Lock:");
+  tft.setCursor(90, 54); tft.print("Sound:");
+}
+
+
+// -----------------------------------------------------------------
+//  Function: updateDashboard
+// -----------------------------------------------------------------
+void updateDashboard() {
+  // --- Network name ---
+  tft.fillRect(30, 18, 60, 10, ST7735_BLACK);
+  tft.setCursor(30, 18);
+  tft.setTextColor(ST7735_GREEN);
+  tft.print(connectedNetworkName);
+
+  // --- Pan angle ---
+  tft.fillRect(30, 30, 55, 10, ST7735_BLACK);
+  tft.setCursor(30, 30);
+  tft.setTextColor(ST7735_WHITE);
+  tft.print(currentPanAngle, 1);
+
+  // --- Tilt angle ---
+  tft.fillRect(34, 42, 55, 10, ST7735_BLACK);
+  tft.setCursor(34, 42);
+  tft.print(currentTiltAngle, 1);
+
+  // --- LiDAR range ---
+  tft.fillRect(40, 54, 45, 10, ST7735_BLACK);
+  tft.setCursor(40, 54);
+  if (lastLunaDistanceCm >= 0) {
+    tft.print(lastLunaDistanceCm);
+    tft.print("cm");
+  } else {
+    tft.print("---");
+  }
+
+  // --- Laser state ---
+  tft.fillRect(128, 30, 30, 10, ST7735_BLACK);
+  tft.setCursor(128, 30);
+  tft.setTextColor(laserShouldBeOn ? ST7735_RED : ST7735_WHITE);
+  tft.print(laserShouldBeOn ? "ON" : "off");
+
+  // --- Lock state ---
+  tft.fillRect(122, 42, 36, 10, ST7735_BLACK);
+  tft.setCursor(122, 42);
+  tft.setTextColor(isCurrentlyLocked ? ST7735_YELLOW : ST7735_WHITE);
+  tft.print(isCurrentlyLocked ? "LOCK" : "----");
+
+  // --- Sound module status ---
+  tft.fillRect(130, 54, 28, 10, ST7735_BLACK);
+  tft.setCursor(130, 54);
+  tft.setTextColor(dfPlayerIsReady ? ST7735_GREEN : ST7735_RED);
+  tft.print(dfPlayerIsReady ? "OK" : "N/A");
+
+  // --- Connection status bar at the bottom ---
+  tft.fillRect(0, 70, 160, 10, ST7735_BLACK);
+  tft.setCursor(2, 70);
+  tft.setTextColor((pcConnection && pcConnection.connected()) ? ST7735_GREEN : ST7735_RED);
+  tft.print((pcConnection && pcConnection.connected()) ? "PC: connected" : "PC: waiting...");
+}
+
+
 // =================================================================
 //  MAIN PROGRAM
 // =================================================================
@@ -338,6 +462,8 @@ void setup() {
 
   pinMode(LASER_PIN, OUTPUT);
   digitalWrite(LASER_PIN, LOW);
+
+  initDashboard();   // Show the dashboard layout immediately, even before Wi-Fi connects
 
   connectToWiFi();
 
@@ -351,7 +477,7 @@ void setup() {
   tiltServo.write(currentTiltAngle);
 
   tcpServer.begin();
-  Serial.println("Full controller ready: motors, laser, sound, LiDAR.");
+  Serial.println("Full controller ready: motors, laser, sound, LiDAR, dashboard.");
 }
 
 void loop() {
@@ -373,12 +499,10 @@ void loop() {
   updateLaser();
   updateAlertSound();
 
-  static unsigned long lastLunaPrint = 0;
-  if (millis() - lastLunaPrint > 1000 && lastLunaDistanceCm >= 0) {
-    Serial.print("LiDAR distance: ");
-    Serial.print(lastLunaDistanceCm);
-    Serial.println(" cm");
-    lastLunaPrint = millis();
+  static unsigned long lastDashboardUpdate = 0;
+  if (millis() - lastDashboardUpdate > 200) {
+    updateDashboard();
+    lastDashboardUpdate = millis();
   }
 
   delay(20);
