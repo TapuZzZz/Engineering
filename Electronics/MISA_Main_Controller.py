@@ -1,18 +1,26 @@
 # =================================================================
-#  PC MAIN CONTROLLER - Camera receive (via mDNS) + FACE detection
-#  + motor commands to ESP32 DevKit (via mDNS). Laser fires ONLY
-#  while spacebar is held down by a human. Sends a "locked" flag
-#  so the DevKit can play an alert sound at the moment of lock.
+#  MISA MAIN CONTROLLER - Camera receive (via mDNS) + FACE detection
+#  + motor commands to ESP32 DevKit (via mDNS) + live web dashboard.
+#  Laser fires ONLY while spacebar is held down by a human.
 # =================================================================
 
 import socket
 import struct
 import time
+import json
+import threading
+from datetime import datetime, timezone
+
 import numpy as np
 import cv2
 
+from fastapi import FastAPI, WebSocket
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+
 # -----------------------------------------------------------------
-#  Configuration - both boards found by name, no IP addresses needed
+#  Configuration
 # -----------------------------------------------------------------
 CAMERA_HOST = "esp32cam.local"
 CAMERA_PORT = 8000
@@ -20,11 +28,13 @@ CAMERA_PORT = 8000
 MOTOR_ESP_HOST = "esp32motors.local"
 MOTOR_ESP_PORT = 9000
 
+DASHBOARD_PORT = 8080   # Separate from camera(8000) and motors(9000)
+
 FRAME_WIDTH  = 640
 FRAME_HEIGHT = 480
 
 # -----------------------------------------------------------------
-#  Servo safety limits - MUST MATCH the ESP32 DevKit firmware
+#  Servo safety limits - MUST MATCH the ESP32-S3 Actuation Controller firmware
 # -----------------------------------------------------------------
 PAN_MIN_ANGLE, PAN_MAX_ANGLE   = 20.0, 160.0
 TILT_MIN_ANGLE, TILT_MAX_ANGLE = 60.0, 150.0
@@ -65,6 +75,41 @@ scan_direction = 1
 smoothed_center_x = None
 smoothed_center_y = None
 frames_since_accepted_detection = 999
+
+# -----------------------------------------------------------------
+#  Shared dashboard state - read by the WebSocket, written by the
+#  main tracking loop.
+# -----------------------------------------------------------------
+system_state = {
+    "status": "starting",
+    "pan": 90.0,
+    "tilt": 90.0,
+    "laser": 0,
+    "locked": 0,
+    "fps": 0.0,
+    "camera_connected": False,
+    "motor_connected": False,
+    "frame_count": 0,
+    "last_update": None,
+}
+
+LOG_FILE_PATH = "turret_events.jsonl"
+
+
+# -----------------------------------------------------------------
+#  Function: log_event
+#  What it does: appends one JSON line per event to a local log
+#  file - a deliberate JSONL choice, not a database, so each line
+#  maps directly to one future database row when needed.
+# -----------------------------------------------------------------
+def log_event(event_name, **details):
+    entry = {
+        "time": datetime.now(timezone.utc).isoformat(),
+        "event": event_name,
+        **details,
+    }
+    with open(LOG_FILE_PATH, "a") as log_file:
+        log_file.write(json.dumps(entry) + "\n")
 
 
 # -----------------------------------------------------------------
@@ -295,10 +340,6 @@ def check_laser_key(key_code):
 
 # -----------------------------------------------------------------
 #  Function: send_motor_command
-#  What it does: sends "pan,tilt,laser,locked\n" - 4 comma-separated
-#  fields. The locked field tells the DevKit whether a face is
-#  currently tracked, so it can trigger the alert sound at the
-#  moment a lock begins. This MUST match the firmware's parser.
 # -----------------------------------------------------------------
 def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state, locked_state):
     command_line = f"{pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}\n"
@@ -332,6 +373,42 @@ def draw_overlay(image, box, status_text):
 
 
 # =================================================================
+#  WEB DASHBOARD - FastAPI app, runs in a background thread
+# =================================================================
+
+dashboard_app = FastAPI()
+
+
+@dashboard_app.get("/")
+def serve_dashboard_page():
+    # CHANGED: filename corrected to match the actual file on disk exactly
+    # (Linux is case-sensitive - "dashboard.html" and "MISA_Dashboard.html"
+    # are two different files as far as the filesystem is concerned).
+    with open("MISA_Dashboard.html", "r", encoding="utf-8") as html_file:
+        return HTMLResponse(html_file.read())
+
+
+@dashboard_app.websocket("/ws")
+async def dashboard_websocket(websocket: WebSocket):
+    """
+    What it does: accepts a browser connection and pushes the
+    current system_state as JSON, about 6 times per second, for as
+    long as the browser tab stays open.
+    """
+    await websocket.accept()
+    try:
+        while True:
+            await websocket.send_text(json.dumps(system_state))
+            await __import__("asyncio").sleep(0.15)
+    except Exception:
+        pass   # Browser closed the tab or connection dropped - nothing to clean up
+
+
+def run_dashboard_server():
+    uvicorn.run(dashboard_app, host="0.0.0.0", port=DASHBOARD_PORT, log_level="warning")
+
+
+# =================================================================
 #  MAIN PROGRAM
 # =================================================================
 
@@ -340,25 +417,40 @@ def main():
     detector = load_face_detector()
     print("Face detector loaded.")
 
+    # --- Start the web dashboard in the background ---
+    dashboard_thread = threading.Thread(target=run_dashboard_server, daemon=True)
+    dashboard_thread.start()
+    print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
+
     print(f"Connecting to camera at {CAMERA_HOST}...")
     camera_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     camera_connection.connect((CAMERA_HOST, CAMERA_PORT))
-    print("Connected to ESP32-CAM.")
+    print("Connected to ESP32-S3-CAM.")
+    system_state["camera_connected"] = True
 
     print(f"Connecting to motor controller at {MOTOR_ESP_HOST}...")
     motor_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     motor_socket.connect((MOTOR_ESP_HOST, MOTOR_ESP_PORT))
     print("Connected to motor controller.")
+    system_state["motor_connected"] = True
+
+    log_event("system_started")
 
     current_pan  = 90.0
     current_tilt = 90.0
     frames_without_detection = 0
+
+    frame_counter_for_fps = 0
+    fps_window_start_time = time.time()
+    was_locked_previously = False
 
     while True:
         try:
             jpeg_bytes = receive_one_frame(camera_connection)
         except ConnectionError:
             print("Camera connection lost - stopping.")
+            system_state["camera_connected"] = False
+            log_event("camera_disconnected")
             break
 
         image = decode_frame(jpeg_bytes)
@@ -385,12 +477,38 @@ def main():
 
         locked_state = 1 if box is not None else 0
 
+        if locked_state == 1 and not was_locked_previously:
+            log_event("lock_acquired", pan=round(current_pan, 1), tilt=round(current_tilt, 1))
+        elif locked_state == 0 and was_locked_previously:
+            log_event("lock_lost")
+        was_locked_previously = (locked_state == 1)
+
         try:
             key_code = draw_overlay(image, box, f"{status_text} | pan={current_pan:.1f} tilt={current_tilt:.1f}")
             laser_state = check_laser_key(key_code)
+
+            if laser_state == 1 and system_state.get("laser") != 1:
+                log_event("laser_fired", pan=round(current_pan, 1), tilt=round(current_tilt, 1))
+
             send_motor_command(motor_socket, current_pan, current_tilt, laser_state, locked_state)
         except (ConnectionError, OSError) as motor_error:
             print(f"Motor command failed (will retry next frame): {motor_error}")
+            laser_state = 0
+
+        frame_counter_for_fps += 1
+        now = time.time()
+        if now - fps_window_start_time >= 1.0:
+            system_state["fps"] = round(frame_counter_for_fps / (now - fps_window_start_time), 1)
+            frame_counter_for_fps = 0
+            fps_window_start_time = now
+
+        system_state["status"] = status_text
+        system_state["pan"] = round(current_pan, 1)
+        system_state["tilt"] = round(current_tilt, 1)
+        system_state["laser"] = laser_state
+        system_state["locked"] = locked_state
+        system_state["frame_count"] += 1
+        system_state["last_update"] = datetime.now(timezone.utc).isoformat()
 
     camera_connection.close()
     motor_socket.close()
