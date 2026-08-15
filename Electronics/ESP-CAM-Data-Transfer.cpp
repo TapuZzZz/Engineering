@@ -1,12 +1,22 @@
 // =================================================================
-//  ESP32-CAM  -  FINAL VERSION (persistent retry, dimmed LED)
+//  ESP32-S3-CAM  -  FINAL VERSION (new 5MP camera board)
 //  Acts as a TCP SERVER, advertised via mDNS as "esp32cam.local".
-//  Keeps retrying the network list FOREVER instead of halting -
-//  necessary because of weak signal through concrete walls.
-//  Status LED uses PWM dimming (not full digitalWrite HIGH) to
-//  avoid heat buildup - this LED is the camera's bright flash LED.
-//  Uses the newer ledcAttach()/ledcWrite(pin, ...) API (Arduino
-//  ESP32 core 3.x) instead of the older ledcSetup/ledcAttachPin.
+//  Tries each known Wi-Fi network in order until one connects.
+//
+//  *** IMPORTANT - PIN MAPPING STATUS ***
+//  This board was purchased without confirmed official pin
+//  documentation. The camera pin numbers below are the
+//  "CAMERA_MODEL_ESP32S3_EYE" mapping - the configuration most
+//  commonly cited across multiple independent sources (Arduino
+//  Forum, Espressif GitHub discussions) for this exact style of
+//  generic ESP32-S3-WROOM CAM board (FPC ribbon camera connector,
+//  dual USB-C, EN/RST + BOOT buttons, N16R8 module).
+//  This is the best available estimate, NOT a confirmed fact.
+//  BEFORE relying on this in the final project: verify each pin
+//  with a multimeter in continuity mode between each FPC connector
+//  contact and the corresponding labeled GPIO pin on the board
+//  edge. If frame capture fails or the image looks wrong, this
+//  pin map is the first thing to re-check.
 // =================================================================
 
 #include <WiFi.h>
@@ -14,36 +24,26 @@
 #include "esp_camera.h"
 
 // -----------------------------------------------------------------
-//  Camera pin map - fixed by the physical wiring of the
-//  "AI Thinker ESP32-CAM" board.
+//  Camera pin map - ESP32S3_EYE-style (best available estimate,
+//  see warning above). PWDN and RESET are not used on this board
+//  design (-1 means "not connected / not needed").
 // -----------------------------------------------------------------
-#define PWDN_GPIO_NUM     32
+#define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
-
-// -----------------------------------------------------------------
-//  Status LED - PWM dimmed instead of full digitalWrite HIGH.
-//  This is the camera's bright flash LED, meant for brief full-power
-//  bursts, not sustained use - dimming keeps it cool even when left
-//  on for a few seconds.
-// -----------------------------------------------------------------
-#define STATUS_LED_PIN 4
-const int LED_PWM_FREQUENCY  = 5000;   // 5kHz - fast enough to avoid visible flicker
-const int LED_PWM_RESOLUTION = 8;      // 8-bit = values from 0 (off) to 255 (full brightness)
-const int LED_DIM_BRIGHTNESS = 12;     // ~5% brightness - visible but stays cool to the touch
+#define XCLK_GPIO_NUM     15
+#define SIOD_GPIO_NUM      4
+#define SIOC_GPIO_NUM      5
+#define Y9_GPIO_NUM       16
+#define Y8_GPIO_NUM       17
+#define Y7_GPIO_NUM       18
+#define Y6_GPIO_NUM       12
+#define Y5_GPIO_NUM       10
+#define Y4_GPIO_NUM        8
+#define Y3_GPIO_NUM        9
+#define Y2_GPIO_NUM       11
+#define VSYNC_GPIO_NUM     6
+#define HREF_GPIO_NUM      7
+#define PCLK_GPIO_NUM     13
 
 // -----------------------------------------------------------------
 //  Known Wi-Fi networks - tries each one in order, cycling forever
@@ -55,9 +55,9 @@ struct WifiNetwork {
 };
 
 WifiNetwork knownNetworks[] = {
-  {"Lagami",                   "0547692269"},
   {"TP-Link- Salon",           "03032007"},
-  {"Artyom Kiselhof's iPhone", "artyom0303"}
+  {"Artyom Kiselhof's iPhone", "artyom0303"},
+  {"Lagami",                   "0547692269"}
 };
 
 const uint16_t SERVER_PORT = 8000;
@@ -69,9 +69,9 @@ WiFiClient pcConnection;
 // -----------------------------------------------------------------
 //  Function: connectToWiFi
 //  What it does: keeps cycling through knownNetworks[] FOREVER
-//  until one connects. Dims the status LED while trying (blinking
-//  at low brightness), gives a brief dim confirmation flash once
-//  connected, then turns it off.
+//  until one connects, resetting the Wi-Fi driver state fully
+//  before each attempt to avoid the "cannot set config" error
+//  seen when switching networks too quickly.
 // -----------------------------------------------------------------
 void connectToWiFi() {
   WiFi.mode(WIFI_STA);
@@ -96,10 +96,9 @@ void connectToWiFi() {
       WiFi.begin(knownNetworks[i].ssid, knownNetworks[i].password);
 
       int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts < 30) {   // ~15 seconds for weak signal
+      while (WiFi.status() != WL_CONNECTED && attempts < 30) {
         delay(500);
         Serial.print(".");
-        ledcWrite(STATUS_LED_PIN, (attempts % 2) ? LED_DIM_BRIGHTNESS : 0);
         attempts++;
       }
 
@@ -108,7 +107,7 @@ void connectToWiFi() {
         Serial.println("Connected!");
         Serial.print("Network: ");
         Serial.println(knownNetworks[i].ssid);
-        Serial.print("ESP32-CAM IP address: ");
+        Serial.print("ESP32-S3-CAM IP address: ");
         Serial.println(WiFi.localIP());
 
         if (MDNS.begin("esp32cam")) {
@@ -117,9 +116,6 @@ void connectToWiFi() {
           Serial.println("mDNS setup failed - PC will need the raw IP instead.");
         }
 
-        ledcWrite(STATUS_LED_PIN, LED_DIM_BRIGHTNESS);   // Brief dim confirmation
-        delay(500);
-        ledcWrite(STATUS_LED_PIN, 0);                     // Then off
         return;
       }
 
@@ -129,7 +125,6 @@ void connectToWiFi() {
     }
 
     Serial.println("Completed a full round with no success - trying again...");
-    ledcWrite(STATUS_LED_PIN, 0);
     delay(1000);
   }
 }
@@ -137,9 +132,17 @@ void connectToWiFi() {
 
 // -----------------------------------------------------------------
 //  Function: initCamera
-//  What it does: configures the camera driver. Uses TWO frame
-//  buffers so the sensor can write a new frame into one buffer
-//  while the other is still being read/sent.
+//  What it does: configures the camera driver. Resolution is
+//  DELIBERATELY kept at VGA (640x480), not the sensor's full 5MP
+//  capability - this is a conscious decision carried over from
+//  earlier testing: higher resolution means larger JPEG frames,
+//  which means more data to transmit over Wi-Fi, which directly
+//  hurt tracking latency on weaker signal connections. The 5MP
+//  sensor gives us that option for the future, not an obligation
+//  to use it now. Two frame buffers + CAMERA_GRAB_LATEST prevent
+//  the buffer-tearing (merged/corrupt frames) issue solved earlier.
+//  fb_location is explicitly set to PSRAM, since this board has
+//  8MB of it available - safer than relying on limited internal SRAM.
 // -----------------------------------------------------------------
 bool initCamera() {
   camera_config_t config;
@@ -164,18 +167,20 @@ bool initCamera() {
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer   = LEDC_TIMER_0;
 
-  config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_VGA;         // 640x480
-  config.jpeg_quality  = 10;                    // Lower = higher quality, less compression artifacts
-  config.fb_count      = 2;                     // Two buffers prevent write/read overlap
-  config.grab_mode     = CAMERA_GRAB_LATEST;    // Always hand us the newest complete frame
+  config.xclk_freq_hz  = 20000000;
+  config.pixel_format  = PIXFORMAT_JPEG;
+  config.frame_size    = FRAMESIZE_VGA;         // 640x480 - deliberate choice, see comment above
+  config.jpeg_quality  = 10;
+  config.fb_count      = 2;
+  config.grab_mode     = CAMERA_GRAB_LATEST;
+  config.fb_location   = CAMERA_FB_IN_PSRAM;    // NEW: this board has 8MB PSRAM, use it
 
   esp_err_t result = esp_camera_init(&config);
 
   if (result != ESP_OK) {
     Serial.print("Camera init failed with error code: ");
     Serial.println(result);
+    Serial.println("If this fails, the pin mapping above is the most likely cause - verify with a multimeter.");
     return false;
   }
 
@@ -214,8 +219,9 @@ void sendAllBytes(const uint8_t* data, size_t totalLength) {
 //  What it does: every valid JPEG file must start with bytes
 //  0xFF 0xD8 and end with bytes 0xFF 0xD9. We also reject frames
 //  that are unusually large - a normal single VGA JPEG at our
-//  quality setting runs ~10,000-18,000 bytes, so anything much
-//  bigger is almost certainly two frames stuck together.
+//  quality setting runs roughly 10,000-18,000 bytes, so anything
+//  much bigger is almost certainly two frames stuck together in
+//  the camera's shared buffer.
 // -----------------------------------------------------------------
 bool isValidJpeg(const uint8_t* data, size_t length) {
   const size_t MAX_REASONABLE_SIZE = 25000;
@@ -298,16 +304,9 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // Set up PWM on the status LED pin - newer core 3.x API:
-  // ledcAttach(pin, freq, resolution) combines what used to be two
-  // separate calls (ledcSetup + ledcAttachPin), and ledcWrite takes
-  // the pin number directly instead of a channel number.
-  ledcAttach(STATUS_LED_PIN, LED_PWM_FREQUENCY, LED_PWM_RESOLUTION);
-  ledcWrite(STATUS_LED_PIN, 0);   // Start fully off
-
   connectToWiFi();
 
-  delay(200);   // Brief settle time before camera init, reduces I2C warnings on wake-up
+  delay(200);   // Brief settle time before camera init
 
   if (!initCamera()) {
     Serial.println("Stopping - camera did not initialize.");
