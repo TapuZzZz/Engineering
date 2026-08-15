@@ -1,8 +1,23 @@
 // =================================================================
-//  ESP32 DEVKIT  -  ABSOLUTE FINAL VERSION
-//  All components integrated: pan/tilt servos, laser (manual-only),
-//  DFPlayer alert sound on target lock, TF-Luna distance sensor,
-//  and a calibrated 1.8" ST7735 SPI TFT dashboard.
+//  ESP32-S3 DEVKIT  -  FINAL COMPLETE VERSION (new board, replacing
+//  the one that burned out)
+//  Combines: pan/tilt servos, laser (manual-only), DFPlayer alert
+//  sound on target lock, TF-Luna distance sensor, and a calibrated
+//  1.8" ST7735 SPI TFT dashboard.
+//
+//  *** PIN MAPPING STATUS ***
+//  Unlike the camera board, this is a STANDARD Espressif
+//  ESP32-S3-DevKitC-1 (44-pin), which has OFFICIAL published
+//  documentation - not a guess. All pins below were chosen while
+//  strictly avoiding, per Espressif's official pin guide:
+//    - Strapping pins (boot-critical): GPIO 0, 3, 45, 46
+//    - Native USB D+/D-: GPIO 19, 20
+//    - Main Serial (USB-UART bridge): GPIO 43, 44
+//    - Octal PSRAM internal use (N16R8 = Octal variant): GPIO 35, 36, 37
+//    - Onboard RGB LED (varies by board revision): GPIO 38 or 48
+//  Confidence in this pin map is HIGH, but still verify once the
+//  board is in hand that it is genuinely the standard DevKitC-1
+//  layout and not a relabeled clone.
 //
 //  SAFETY: the laser is ONLY ever set by an explicit command field
 //  from the PC - nothing in this file turns it on automatically.
@@ -18,7 +33,8 @@
 #include <Adafruit_ST7735.h>
 
 // -----------------------------------------------------------------
-//  Known Wi-Fi networks
+//  Known Wi-Fi networks - order matches what the user set on the
+//  camera board, for consistency between the two files.
 // -----------------------------------------------------------------
 struct WifiNetwork {
   const char* ssid;
@@ -26,9 +42,9 @@ struct WifiNetwork {
 };
 
 WifiNetwork knownNetworks[] = {
-  {"Lagami",                   "0547692269"},
   {"TP-Link- Salon",           "03032007"},
-  {"Artyom Kiselhof's iPhone", "artyom0303"}
+  {"Artyom Kiselhof's iPhone", "artyom0303"},
+  {"Lagami",                   "0547692269"}
 };
 
 const uint16_t SERVER_PORT = 9000;
@@ -38,44 +54,49 @@ WiFiClient pcConnection;
 String connectedNetworkName = "---";
 
 // -----------------------------------------------------------------
-//  Servo pin assignment
+//  Servo pin assignment - safe general-purpose GPIOs
 // -----------------------------------------------------------------
-const int PAN_PIN   = 14;
-const int TILT_PIN  = 13;
-const int LASER_PIN = 26;
+const int PAN_PIN   = 4;
+const int TILT_PIN  = 5;
+const int LASER_PIN = 6;
 
 Servo panServo;
 Servo tiltServo;
 
 // -----------------------------------------------------------------
-//  DFPlayer wiring - UART channel 1
+//  DFPlayer wiring - UART channel 1, safe GPIOs
 // -----------------------------------------------------------------
-#define DFPLAYER_RX_PIN 17
-#define DFPLAYER_TX_PIN 16
+#define DFPLAYER_RX_PIN 7    // ESP32 RX <- DFPlayer TX
+#define DFPLAYER_TX_PIN 8    // ESP32 TX -> DFPlayer RX (through ~1k resistor)
 
 HardwareSerial dfPlayerSerial(1);
 DFRobotDFPlayerMini dfPlayer;
 bool dfPlayerIsReady = false;
 
 // -----------------------------------------------------------------
-//  TF-Luna wiring - UART channel 2 (confirmed: pin2->GPIO25, pin3->GPIO33)
+//  TF-Luna wiring - UART channel 2, safe GPIOs
 // -----------------------------------------------------------------
-#define LUNA_RX_PIN 33
-#define LUNA_TX_PIN 25
+#define LUNA_RX_PIN 9    // ESP32 RX <- TF-Luna TX (pin 3)
+#define LUNA_TX_PIN 10   // ESP32 TX -> TF-Luna RX (pin 2)
 
 HardwareSerial lunaSerial(2);
 int lastLunaDistanceCm = -1;
 
 // -----------------------------------------------------------------
-//  TFT display wiring - ST7735S, hardware SPI.
+//  TFT display wiring - ST7735S, hardware SPI on safe GPIOs.
 //  Subclass exposes setColRowStart() (protected in the base
-//  library) so we can correct the chip's internal offset - needed
-//  because this clone's 132x162 internal memory doesn't line up
-//  exactly with its 128x160 visible area.
+//  library) so we can apply the same offset correction learned
+//  on the previous board (col=2, row=1) - the OFFSET VALUE itself
+//  is a property of this specific physical screen, not the ESP32
+//  board, so it should still be correct, but must be re-verified
+//  visually once wired (send a solid fillScreen color and check
+//  for the noisy-edge artifact seen before).
 // -----------------------------------------------------------------
-#define TFT_CS   5
-#define TFT_RST  15
-#define TFT_DC   27
+#define TFT_CS   11
+#define TFT_RST  12
+#define TFT_DC   13
+#define TFT_MOSI 14
+#define TFT_SCK  15
 
 class TftWithOffset : public Adafruit_ST7735 {
 public:
@@ -87,11 +108,12 @@ public:
 
 TftWithOffset tft = TftWithOffset(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
-const int8_t TFT_COL_OFFSET = 2;   // Calibrated value - confirmed working
-const int8_t TFT_ROW_OFFSET = 1;   // Calibrated value - confirmed working
+const int8_t TFT_COL_OFFSET = 2;   // Carried over from previous calibration - re-verify on this screen
+const int8_t TFT_ROW_OFFSET = 1;
 
 // -----------------------------------------------------------------
-//  Safety limits
+//  Safety limits - UNCHANGED from before, these describe the
+//  physical turret geometry, not the electronics
 // -----------------------------------------------------------------
 const float PAN_MIN_ANGLE  = 20.0;
 const float PAN_MAX_ANGLE  = 160.0;
@@ -153,7 +175,7 @@ void connectToWiFi() {
         Serial.println("Connected!");
         Serial.print("Network: ");
         Serial.println(knownNetworks[i].ssid);
-        Serial.print("ESP32 DevKit IP address: ");
+        Serial.print("ESP32-S3 DevKit IP address: ");
         Serial.println(WiFi.localIP());
 
         connectedNetworkName = knownNetworks[i].ssid;
@@ -354,10 +376,6 @@ void checkWiFiStillConnected() {
 
 // -----------------------------------------------------------------
 //  Function: initDashboard
-//  What it does: full manual reset sequence, slow reliable SPI,
-//  then init -> rotation -> offset, IN THAT EXACT ORDER (setting
-//  the offset before rotation gets silently overwritten by the
-//  library's own per-rotation default table).
 // -----------------------------------------------------------------
 void initDashboard() {
   pinMode(TFT_RST, OUTPUT);
@@ -368,12 +386,12 @@ void initDashboard() {
   digitalWrite(TFT_RST, HIGH);
   delay(100);
 
-  SPI.begin(18, -1, 23, 5);   // SCK=18, MISO unused, MOSI=23, SS=5
-  SPI.setFrequency(1000000);   // 1MHz - reliable, plenty fast for a status dashboard
+  SPI.begin(TFT_SCK, -1, TFT_MOSI, TFT_CS);   // SCK, MISO unused, MOSI, SS
+  SPI.setFrequency(1000000);
 
   tft.initR(INITR_BLACKTAB);
-  tft.setRotation(1);                                    // Rotation FIRST
-  tft.setColRowStart(TFT_COL_OFFSET, TFT_ROW_OFFSET);     // Offset AFTER - confirmed working combo
+  tft.setRotation(1);
+  tft.setColRowStart(TFT_COL_OFFSET, TFT_ROW_OFFSET);
 
   tft.fillScreen(ST7735_BLACK);
   tft.setTextColor(ST7735_WHITE);
@@ -399,24 +417,20 @@ void initDashboard() {
 //  Function: updateDashboard
 // -----------------------------------------------------------------
 void updateDashboard() {
-  // --- Network name ---
   tft.fillRect(30, 18, 60, 10, ST7735_BLACK);
   tft.setCursor(30, 18);
   tft.setTextColor(ST7735_GREEN);
   tft.print(connectedNetworkName);
 
-  // --- Pan angle ---
   tft.fillRect(30, 30, 55, 10, ST7735_BLACK);
   tft.setCursor(30, 30);
   tft.setTextColor(ST7735_WHITE);
   tft.print(currentPanAngle, 1);
 
-  // --- Tilt angle ---
   tft.fillRect(34, 42, 55, 10, ST7735_BLACK);
   tft.setCursor(34, 42);
   tft.print(currentTiltAngle, 1);
 
-  // --- LiDAR range ---
   tft.fillRect(40, 54, 45, 10, ST7735_BLACK);
   tft.setCursor(40, 54);
   if (lastLunaDistanceCm >= 0) {
@@ -426,25 +440,21 @@ void updateDashboard() {
     tft.print("---");
   }
 
-  // --- Laser state ---
   tft.fillRect(128, 30, 30, 10, ST7735_BLACK);
   tft.setCursor(128, 30);
   tft.setTextColor(laserShouldBeOn ? ST7735_RED : ST7735_WHITE);
   tft.print(laserShouldBeOn ? "ON" : "off");
 
-  // --- Lock state ---
   tft.fillRect(122, 42, 36, 10, ST7735_BLACK);
   tft.setCursor(122, 42);
   tft.setTextColor(isCurrentlyLocked ? ST7735_YELLOW : ST7735_WHITE);
   tft.print(isCurrentlyLocked ? "LOCK" : "----");
 
-  // --- Sound module status ---
   tft.fillRect(130, 54, 28, 10, ST7735_BLACK);
   tft.setCursor(130, 54);
   tft.setTextColor(dfPlayerIsReady ? ST7735_GREEN : ST7735_RED);
   tft.print(dfPlayerIsReady ? "OK" : "N/A");
 
-  // --- Connection status bar at the bottom ---
   tft.fillRect(0, 70, 160, 10, ST7735_BLACK);
   tft.setCursor(2, 70);
   tft.setTextColor((pcConnection && pcConnection.connected()) ? ST7735_GREEN : ST7735_RED);
@@ -463,7 +473,7 @@ void setup() {
   pinMode(LASER_PIN, OUTPUT);
   digitalWrite(LASER_PIN, LOW);
 
-  initDashboard();   // Show the dashboard layout immediately, even before Wi-Fi connects
+  initDashboard();
 
   connectToWiFi();
 
