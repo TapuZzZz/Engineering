@@ -1,11 +1,307 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<title>מיס"א — Live Dashboard</title>
+<style>
+  :root {
+    --navy: #17232E;
+    --panel: #1E2E3B;
+    --deep: #355872;
+    --mid: #7AAACE;
+    --accent: #9CD5FF;
+    --off-white: #F7F8F0;
+    --ok: #57D97E;
+    --warn: #E8B45F;
+    --danger: #E5717A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--navy);
+    color: var(--off-white);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 60px;
+  }
+
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--deep);
+    padding-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 20px;
+    letter-spacing: 2px;
+    margin: 0;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: var(--mid);
+    font-family: 'Menlo', 'Consolas', monospace;
+  }
+
+  .grid {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--deep);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .card-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--mid);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .card-value {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--off-white);
+  }
+
+  .card-value.small { font-size: 16px; }
+
+  .status-tracking { color: var(--ok); }
+  .status-scanning { color: var(--warn); }
+  .status-holding  { color: var(--mid); }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 8px;
+    background: var(--danger);
+  }
+  .dot.connected { background: var(--ok); }
+
+  .laser-card { grid-column: span 1; }
+  .laser-indicator {
+    width: 100%;
+    height: 46px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 15px;
+    letter-spacing: 2px;
+    background: #2A3B47;
+    color: var(--mid);
+    transition: all 0.15s ease;
+  }
+  .laser-indicator.firing {
+    background: var(--danger);
+    color: #1a0a0a;
+    box-shadow: 0 0 18px 2px rgba(229,113,122,0.7);
+  }
+
+  .gauge-wrap {
+    grid-column: span 2;
+  }
+  .gauge-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .gauge-track {
+    flex: 1;
+    height: 8px;
+    background: #2A3B47;
+    border-radius: 4px;
+    position: relative;
+    overflow: visible;
+  }
+  .gauge-fill {
+    position: absolute;
+    top: -3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px 1px var(--accent);
+    transition: left 0.15s ease;
+  }
+  .gauge-num {
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 13px;
+    color: var(--mid);
+    width: 42px;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--deep);
+    font-family: 'Menlo', 'Consolas', monospace;
+  }
+</style>
 </head>
 <body>
-    
+
+  <header>
+    <div>
+      <h1>מערכת יירוט וסיווג אופטי — מיס"א</h1>
+      <div class="subtitle">LIVE OPERATOR DASHBOARD</div>
+    </div>
+    <div class="subtitle" id="clock">--:--:--</div>
+  </header>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-label">Camera Link</div>
+      <div class="card-value small">
+        <span id="cam-text">---</span>
+        <span class="dot" id="cam-dot"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Motor Link</div>
+      <div class="card-value small">
+        <span id="motor-text">---</span>
+        <span class="dot" id="motor-dot"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Status</div>
+      <div class="card-value" id="status-value">---</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">FPS</div>
+      <div class="card-value" id="fps-value">0.0</div>
+    </div>
+
+    <div class="card gauge-wrap">
+      <div class="card-label">Pan (20° — 160°)</div>
+      <div class="gauge-row">
+        <span class="gauge-num" id="pan-num">90.0°</span>
+        <div class="gauge-track"><div class="gauge-fill" id="pan-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="card gauge-wrap">
+      <div class="card-label">Tilt (60° — 150°)</div>
+      <div class="gauge-row">
+        <span class="gauge-num" id="tilt-num">90.0°</span>
+        <div class="gauge-track"><div class="gauge-fill" id="tilt-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Target Lock</div>
+      <div class="card-value" id="lock-value">----</div>
+    </div>
+
+    <div class="card laser-card">
+      <div class="card-label">Laser</div>
+      <div class="laser-indicator" id="laser-indicator">STANDBY</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Frames Processed</div>
+      <div class="card-value small" id="frame-count">0</div>
+    </div>
+
+  </div>
+
+  <footer>מיס"א · connects to ws://localhost:8080/ws</footer>
+
+<script>
+  const PAN_MIN = 20, PAN_MAX = 160;
+  const TILT_MIN = 60, TILT_MAX = 150;
+
+  function percentWithinRange(value, min, max) {
+    return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  }
+
+  function setGauge(fillId, numId, value, min, max, unit) {
+    document.getElementById(numId).textContent = value.toFixed(1) + unit;
+    const percent = percentWithinRange(value, min, max);
+    document.getElementById(fillId).style.left = `calc(${percent}% - 7px)`;
+  }
+
+  function connectWebSocket() {
+    const ws = new WebSocket(`ws://${location.hostname}:8080/ws`);
+
+    ws.onmessage = (event) => {
+      const state = JSON.parse(event.data);
+
+      const camDot = document.getElementById('cam-dot');
+      const motorDot = document.getElementById('motor-dot');
+      camDot.classList.toggle('connected', state.camera_connected);
+      motorDot.classList.toggle('connected', state.motor_connected);
+      document.getElementById('cam-text').textContent = state.camera_connected ? 'ONLINE' : 'OFFLINE';
+      document.getElementById('motor-text').textContent = state.motor_connected ? 'ONLINE' : 'OFFLINE';
+
+      const statusEl = document.getElementById('status-value');
+      statusEl.textContent = state.status.toUpperCase();
+      statusEl.className = 'card-value ' +
+        (state.status === 'TRACKING FACE' ? 'status-tracking' :
+         state.status === 'SCANNING' ? 'status-scanning' : 'status-holding');
+
+      document.getElementById('fps-value').textContent = state.fps.toFixed(1);
+      document.getElementById('frame-count').textContent = state.frame_count;
+
+      setGauge('pan-fill', 'pan-num', state.pan, PAN_MIN, PAN_MAX, '°');
+      setGauge('tilt-fill', 'tilt-num', state.tilt, TILT_MIN, TILT_MAX, '°');
+
+      document.getElementById('lock-value').textContent = state.locked ? 'LOCKED' : '----';
+
+      const laserEl = document.getElementById('laser-indicator');
+      if (state.laser) {
+        laserEl.textContent = 'FIRING';
+        laserEl.classList.add('firing');
+      } else {
+        laserEl.textContent = 'STANDBY';
+        laserEl.classList.remove('firing');
+      }
+    };
+
+    ws.onclose = () => {
+      document.getElementById('status-value').textContent = 'DISCONNECTED';
+      setTimeout(connectWebSocket, 1500);
+    };
+  }
+
+  function tickClock() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+
+  connectWebSocket();
+</script>
+
 </body>
-</html>_
+</html>
