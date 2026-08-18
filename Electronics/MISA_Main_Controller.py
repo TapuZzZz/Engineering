@@ -158,7 +158,6 @@ def decode_frame(jpeg_bytes):
     if image is None:
         return None
 
-    image = cv2.rotate(image, cv2.ROTATE_180)
     return image
 
 

@@ -1,0 +1,338 @@
+{"time": "2026-08-18T22:59:26.958329+00:00", "event": "system_started"}
+{"time": "2026-08-18T23:00:21.128871+00:00", "event": "system_started"}
+{"time": "2026-08-18T23:01:00.814506+00:00", "event": "system_started"}
+{"time": "2026-08-18T23:01:03.750427+00:00", "event": "lock_acquired", "pan": 89.2, "tilt": 89.4}
+{"time": "2026-08-18T23:01:14.157269+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:15.865493+00:00", "event": "lock_acquired", "pan": 50.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:17.668235+00:00", "event": "laser_fired", "pan": 43.1, "tilt": 60.0}
+{"time": "2026-08-18T23:01:18.643488+00:00", "event": "laser_fired", "pan": 39.1, "tilt": 60.0}
+{"time": "2026-08-18T23:01:19.189411+00:00", "event": "laser_fired", "pan": 36.6, "tilt": 60.0}
+{"time": "2026-08-18T23:01:19.998395+00:00", "event": "laser_fired", "pan": 33.4, "tilt": 60.0}
+{"time": "2026-08-18T23:01:20.510034+00:00", "event": "laser_fired", "pan": 31.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:21.890148+00:00", "event": "laser_fired", "pan": 23.1, "tilt": 60.0}
+{"time": "2026-08-18T23:01:22.294625+00:00", "event": "laser_fired", "pan": 20.4, "tilt": 60.0}
+{"time": "2026-08-18T23:01:22.913108+00:00", "event": "laser_fired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:27.196742+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:27.623233+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:27.824953+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:27.937360+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:28.390992+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:29.340476+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:29.579160+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:29.721489+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:29.823516+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:31.165871+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:31.360741+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:32.771719+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:33.090417+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:33.370227+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:33.744412+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:33.882269+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:01:36.476258+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:37.128761+00:00", "event": "lock_acquired", "pan": 26.9, "tilt": 65.1}
+{"time": "2026-08-18T23:01:37.192585+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:37.258986+00:00", "event": "lock_acquired", "pan": 25.6, "tilt": 66.3}
+{"time": "2026-08-18T23:01:45.992721+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:46.411178+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 103.1}
+{"time": "2026-08-18T23:01:46.473756+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:47.878193+00:00", "event": "lock_acquired", "pan": 38.4, "tilt": 89.4}
+{"time": "2026-08-18T23:01:47.927993+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:48.067509+00:00", "event": "lock_acquired", "pan": 36.1, "tilt": 89.1}
+{"time": "2026-08-18T23:01:48.133786+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:48.583922+00:00", "event": "lock_acquired", "pan": 34.1, "tilt": 89.0}
+{"time": "2026-08-18T23:01:48.735904+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:49.162560+00:00", "event": "lock_acquired", "pan": 30.4, "tilt": 89.2}
+{"time": "2026-08-18T23:01:49.256232+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:49.311772+00:00", "event": "lock_acquired", "pan": 28.7, "tilt": 89.4}
+{"time": "2026-08-18T23:01:49.399802+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:49.504858+00:00", "event": "lock_acquired", "pan": 27.1, "tilt": 89.6}
+{"time": "2026-08-18T23:01:49.879210+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:49.937554+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 91.1}
+{"time": "2026-08-18T23:01:50.115400+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:50.162889+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 91.9}
+{"time": "2026-08-18T23:01:50.221097+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:50.269202+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 92.2}
+{"time": "2026-08-18T23:01:56.535834+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:56.601792+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 119.3}
+{"time": "2026-08-18T23:01:57.012458+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:57.067065+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 120.6}
+{"time": "2026-08-18T23:01:58.533414+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:01:58.575820+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 125.3}
+{"time": "2026-08-18T23:01:59.323186+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:01.327154+00:00", "event": "lock_acquired", "pan": 38.6, "tilt": 89.9}
+{"time": "2026-08-18T23:02:01.838117+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:02.994169+00:00", "event": "lock_acquired", "pan": 28.1, "tilt": 89.1}
+{"time": "2026-08-18T23:02:03.040479+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:04.963363+00:00", "event": "lock_acquired", "pan": 37.3, "tilt": 89.9}
+{"time": "2026-08-18T23:02:05.011781+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:05.411085+00:00", "event": "lock_acquired", "pan": 34.3, "tilt": 89.8}
+{"time": "2026-08-18T23:02:05.507584+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:08.556869+00:00", "event": "lock_acquired", "pan": 41.2, "tilt": 89.9}
+{"time": "2026-08-18T23:02:08.759839+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:09.039629+00:00", "event": "lock_acquired", "pan": 38.2, "tilt": 89.8}
+{"time": "2026-08-18T23:02:12.732061+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:12.846669+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 96.4}
+{"time": "2026-08-18T23:02:13.294209+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:14.422660+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 95.4}
+{"time": "2026-08-18T23:02:18.035512+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:19.903142+00:00", "event": "lock_acquired", "pan": 38.7, "tilt": 89.8}
+{"time": "2026-08-18T23:02:20.464780+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:21.300524+00:00", "event": "lock_acquired", "pan": 29.7, "tilt": 89.1}
+{"time": "2026-08-18T23:02:21.471379+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:24.262328+00:00", "event": "lock_acquired", "pan": 41.3, "tilt": 90.0}
+{"time": "2026-08-18T23:02:24.304538+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:24.970334+00:00", "event": "lock_acquired", "pan": 39.7, "tilt": 89.9}
+{"time": "2026-08-18T23:02:27.299617+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:27.441520+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 86.6}
+{"time": "2026-08-18T23:02:38.221608+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:39.086383+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 98.9}
+{"time": "2026-08-18T23:02:40.024866+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:40.169873+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 98.9}
+{"time": "2026-08-18T23:02:46.435956+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:46.518106+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 99.1}
+{"time": "2026-08-18T23:02:48.212827+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:48.985488+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 99.6}
+{"time": "2026-08-18T23:02:49.129653+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:49.190393+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 100.2}
+{"time": "2026-08-18T23:02:53.148964+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:53.283055+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 109.3}
+{"time": "2026-08-18T23:02:54.469005+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:54.549368+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 109.7}
+{"time": "2026-08-18T23:02:55.389997+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:55.589831+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 110.9}
+{"time": "2026-08-18T23:02:56.144737+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:02:56.591685+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 111.5}
+{"time": "2026-08-18T23:03:03.450297+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:03.786434+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 116.5}
+{"time": "2026-08-18T23:03:05.080100+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:05.434292+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 117.6}
+{"time": "2026-08-18T23:03:05.607925+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:06.030542+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 117.8}
+{"time": "2026-08-18T23:03:06.183906+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:06.238466+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 117.9}
+{"time": "2026-08-18T23:03:06.446590+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:06.625226+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 118.1}
+{"time": "2026-08-18T23:03:09.514227+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:09.638984+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 121.5}
+{"time": "2026-08-18T23:03:11.971196+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:12.110112+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 122.5}
+{"time": "2026-08-18T23:03:13.200149+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:13.321524+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 122.6}
+{"time": "2026-08-18T23:03:14.735586+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:14.798342+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 123.7}
+{"time": "2026-08-18T23:03:27.077270+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:27.347752+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:03:27.691853+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:27.813317+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:03:28.196589+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:28.278635+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:03:28.825357+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:28.919655+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:03:29.560612+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:29.628727+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:03:37.211804+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:37.552995+00:00", "event": "lock_acquired", "pan": 20.2, "tilt": 150.0}
+{"time": "2026-08-18T23:03:37.942845+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:38.001069+00:00", "event": "lock_acquired", "pan": 20.9, "tilt": 150.0}
+{"time": "2026-08-18T23:03:38.802978+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:38.927596+00:00", "event": "lock_acquired", "pan": 23.1, "tilt": 150.0}
+{"time": "2026-08-18T23:03:39.125619+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:39.176375+00:00", "event": "lock_acquired", "pan": 23.4, "tilt": 150.0}
+{"time": "2026-08-18T23:03:39.312606+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:39.359388+00:00", "event": "lock_acquired", "pan": 23.5, "tilt": 150.0}
+{"time": "2026-08-18T23:03:39.453191+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:39.662645+00:00", "event": "lock_acquired", "pan": 23.5, "tilt": 150.0}
+{"time": "2026-08-18T23:03:39.725536+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:40.594757+00:00", "event": "lock_acquired", "pan": 23.6, "tilt": 150.0}
+{"time": "2026-08-18T23:03:40.745459+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:40.883653+00:00", "event": "lock_acquired", "pan": 23.7, "tilt": 150.0}
+{"time": "2026-08-18T23:03:40.955325+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:41.108460+00:00", "event": "lock_acquired", "pan": 23.7, "tilt": 150.0}
+{"time": "2026-08-18T23:03:41.212246+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:41.671134+00:00", "event": "lock_acquired", "pan": 23.7, "tilt": 150.0}
+{"time": "2026-08-18T23:03:41.728886+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:43.115197+00:00", "event": "lock_acquired", "pan": 40.3, "tilt": 90.6}
+{"time": "2026-08-18T23:03:43.210436+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:43.342779+00:00", "event": "lock_acquired", "pan": 40.4, "tilt": 91.2}
+{"time": "2026-08-18T23:03:43.619871+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:44.764950+00:00", "event": "lock_acquired", "pan": 40.6, "tilt": 93.6}
+{"time": "2026-08-18T23:03:45.044515+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:45.100827+00:00", "event": "lock_acquired", "pan": 40.8, "tilt": 95.3}
+{"time": "2026-08-18T23:03:45.204103+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:45.460505+00:00", "event": "lock_acquired", "pan": 40.9, "tilt": 95.9}
+{"time": "2026-08-18T23:03:45.950769+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:46.287610+00:00", "event": "lock_acquired", "pan": 41.4, "tilt": 99.3}
+{"time": "2026-08-18T23:03:46.617189+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:47.588567+00:00", "event": "lock_acquired", "pan": 41.6, "tilt": 101.1}
+{"time": "2026-08-18T23:03:47.694764+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:47.944013+00:00", "event": "lock_acquired", "pan": 41.7, "tilt": 101.7}
+{"time": "2026-08-18T23:03:52.854919+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:52.917300+00:00", "event": "lock_acquired", "pan": 45.9, "tilt": 127.0}
+{"time": "2026-08-18T23:03:54.803794+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:55.457703+00:00", "event": "lock_acquired", "pan": 43.5, "tilt": 135.0}
+{"time": "2026-08-18T23:03:56.747434+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:56.817933+00:00", "event": "lock_acquired", "pan": 26.5, "tilt": 128.3}
+{"time": "2026-08-18T23:03:56.965792+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:57.084502+00:00", "event": "lock_acquired", "pan": 25.2, "tilt": 127.6}
+{"time": "2026-08-18T23:03:57.262171+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:57.993203+00:00", "event": "lock_acquired", "pan": 23.3, "tilt": 127.3}
+{"time": "2026-08-18T23:03:58.164636+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:59.022001+00:00", "event": "lock_acquired", "pan": 22.4, "tilt": 126.9}
+{"time": "2026-08-18T23:03:59.132560+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:59.302328+00:00", "event": "lock_acquired", "pan": 21.6, "tilt": 126.8}
+{"time": "2026-08-18T23:03:59.436994+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:03:59.947933+00:00", "event": "lock_acquired", "pan": 20.9, "tilt": 126.9}
+{"time": "2026-08-18T23:04:00.256670+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:00.408803+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 127.6}
+{"time": "2026-08-18T23:04:01.256689+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:01.482167+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 128.3}
+{"time": "2026-08-18T23:04:04.435414+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:04.600446+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 145.9}
+{"time": "2026-08-18T23:04:04.688322+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:04.794553+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 146.1}
+{"time": "2026-08-18T23:04:05.322796+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:05.523523+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 147.5}
+{"time": "2026-08-18T23:04:06.599960+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:06.727970+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:06.797888+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:06.874027+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:06.948733+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:07.013048+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:07.297679+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:07.620481+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:08.097700+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:08.175255+00:00", "event": "lock_acquired", "pan": 20.5, "tilt": 150.0}
+{"time": "2026-08-18T23:04:08.914399+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:08.986302+00:00", "event": "lock_acquired", "pan": 21.4, "tilt": 150.0}
+{"time": "2026-08-18T23:04:12.062472+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:12.737475+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:15.292983+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:15.555926+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:15.598785+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:15.994088+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:16.040751+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:16.300409+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:16.348056+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:16.661321+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:16.707541+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:16.908136+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:16.957039+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:16.993517+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:17.036206+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:17.337323+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:04:17.386777+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:04:17.630509+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:05:06.418588+00:00", "event": "system_started"}
+{"time": "2026-08-18T23:05:07.018794+00:00", "event": "lock_acquired", "pan": 87.4, "tilt": 92.4}
+{"time": "2026-08-18T23:05:07.583215+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:08.814255+00:00", "event": "lock_acquired", "pan": 81.0, "tilt": 98.8}
+{"time": "2026-08-18T23:05:16.573583+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:16.942672+00:00", "event": "lock_acquired", "pan": 62.1, "tilt": 109.6}
+{"time": "2026-08-18T23:05:16.991622+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:17.058901+00:00", "event": "lock_acquired", "pan": 61.3, "tilt": 109.7}
+{"time": "2026-08-18T23:05:17.331972+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:17.440870+00:00", "event": "lock_acquired", "pan": 54.8, "tilt": 110.3}
+{"time": "2026-08-18T23:05:17.543714+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:17.629618+00:00", "event": "lock_acquired", "pan": 52.7, "tilt": 110.2}
+{"time": "2026-08-18T23:05:18.878413+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:19.063720+00:00", "event": "lock_acquired", "pan": 43.8, "tilt": 107.7}
+{"time": "2026-08-18T23:05:22.122343+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:22.194736+00:00", "event": "lock_acquired", "pan": 32.3, "tilt": 101.2}
+{"time": "2026-08-18T23:05:22.247553+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:22.302282+00:00", "event": "lock_acquired", "pan": 32.8, "tilt": 100.8}
+{"time": "2026-08-18T23:05:22.354798+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:22.432426+00:00", "event": "lock_acquired", "pan": 33.3, "tilt": 100.4}
+{"time": "2026-08-18T23:05:22.477999+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:22.869509+00:00", "event": "lock_acquired", "pan": 33.8, "tilt": 100.0}
+{"time": "2026-08-18T23:05:22.934618+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:23.162938+00:00", "event": "lock_acquired", "pan": 34.3, "tilt": 99.6}
+{"time": "2026-08-18T23:05:24.730938+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:26.908920+00:00", "event": "lock_acquired", "pan": 51.1, "tilt": 89.6}
+{"time": "2026-08-18T23:05:27.026087+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:27.148022+00:00", "event": "lock_acquired", "pan": 51.8, "tilt": 88.7}
+{"time": "2026-08-18T23:05:27.195640+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:27.260528+00:00", "event": "lock_acquired", "pan": 52.2, "tilt": 88.4}
+{"time": "2026-08-18T23:05:28.509885+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:28.567967+00:00", "event": "lock_acquired", "pan": 57.0, "tilt": 83.3}
+{"time": "2026-08-18T23:05:31.164039+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:31.372513+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.2}
+{"time": "2026-08-18T23:05:31.455350+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:31.520469+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.3}
+{"time": "2026-08-18T23:05:31.907231+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:32.021452+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 60.0}
+{"time": "2026-08-18T23:05:33.970316+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:35.308188+00:00", "event": "lock_acquired", "pan": 43.3, "tilt": 89.9}
+{"time": "2026-08-18T23:05:35.405548+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:35.509014+00:00", "event": "lock_acquired", "pan": 43.4, "tilt": 89.6}
+{"time": "2026-08-18T23:05:35.620020+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:35.827345+00:00", "event": "lock_acquired", "pan": 43.9, "tilt": 88.6}
+{"time": "2026-08-18T23:05:35.875447+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:35.952633+00:00", "event": "lock_acquired", "pan": 44.1, "tilt": 88.1}
+{"time": "2026-08-18T23:05:36.056325+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:36.116266+00:00", "event": "lock_acquired", "pan": 44.7, "tilt": 86.8}
+{"time": "2026-08-18T23:05:36.502158+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:36.576241+00:00", "event": "lock_acquired", "pan": 46.2, "tilt": 83.4}
+{"time": "2026-08-18T23:05:37.064520+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:37.179805+00:00", "event": "lock_acquired", "pan": 49.0, "tilt": 78.6}
+{"time": "2026-08-18T23:05:37.216348+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:37.312960+00:00", "event": "lock_acquired", "pan": 49.3, "tilt": 78.1}
+{"time": "2026-08-18T23:05:37.614618+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:37.785878+00:00", "event": "lock_acquired", "pan": 50.2, "tilt": 75.9}
+{"time": "2026-08-18T23:05:37.907529+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:37.930612+00:00", "event": "lock_acquired", "pan": 49.6, "tilt": 75.4}
+{"time": "2026-08-18T23:05:40.531989+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:40.720958+00:00", "event": "lock_acquired", "pan": 39.2, "tilt": 60.0}
+{"time": "2026-08-18T23:05:40.758097+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:40.805039+00:00", "event": "lock_acquired", "pan": 38.7, "tilt": 60.0}
+{"time": "2026-08-18T23:05:43.280865+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:43.349749+00:00", "event": "lock_acquired", "pan": 27.9, "tilt": 60.0}
+{"time": "2026-08-18T23:05:43.542990+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:43.648533+00:00", "event": "lock_acquired", "pan": 29.1, "tilt": 60.0}
+{"time": "2026-08-18T23:05:43.699890+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:44.545936+00:00", "event": "lock_acquired", "pan": 29.7, "tilt": 60.0}
+{"time": "2026-08-18T23:05:45.542644+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:45.742254+00:00", "event": "lock_acquired", "pan": 48.1, "tilt": 60.0}
+{"time": "2026-08-18T23:05:46.233569+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:05:58.076487+00:00", "event": "lock_acquired", "pan": 68.3, "tilt": 88.3}
+{"time": "2026-08-18T23:05:58.150543+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:01.467076+00:00", "event": "lock_acquired", "pan": 79.0, "tilt": 88.4}
+{"time": "2026-08-18T23:06:36.380397+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:36.415883+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:06:36.540237+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:37.197638+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:06:37.709536+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:38.378115+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:06:38.560500+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:39.065229+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:06:39.159614+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:39.360220+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:06:43.607525+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:43.757481+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 149.2}
+{"time": "2026-08-18T23:06:43.854137+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:44.226536+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 149.2}
+{"time": "2026-08-18T23:06:44.342977+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:44.741549+00:00", "event": "lock_acquired", "pan": 20.2, "tilt": 148.9}
+{"time": "2026-08-18T23:06:45.007795+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:45.204304+00:00", "event": "lock_acquired", "pan": 20.5, "tilt": 148.8}
+{"time": "2026-08-18T23:06:45.345086+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:45.403383+00:00", "event": "lock_acquired", "pan": 20.3, "tilt": 149.0}
+{"time": "2026-08-18T23:06:45.506035+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:45.558768+00:00", "event": "lock_acquired", "pan": 20.1, "tilt": 149.3}
+{"time": "2026-08-18T23:06:45.631609+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:45.886136+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 149.4}
+{"time": "2026-08-18T23:06:50.713390+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:51.874355+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 121.9}
+{"time": "2026-08-18T23:06:54.021762+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:06:56.638111+00:00", "event": "lock_acquired", "pan": 42.7, "tilt": 91.3}
+{"time": "2026-08-18T23:07:10.653016+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:11.589259+00:00", "event": "lock_acquired", "pan": 39.4, "tilt": 92.3}
+{"time": "2026-08-18T23:07:15.842999+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:16.039745+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:07:16.088435+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:16.185967+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:07:16.233684+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:16.543237+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:07:16.651501+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:17.176474+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
+{"time": "2026-08-18T23:07:17.244697+00:00", "event": "lock_lost"}
+{"time": "2026-08-18T23:07:17.837226+00:00", "event": "lock_acquired", "pan": 20.0, "tilt": 150.0}
