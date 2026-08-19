@@ -1,33 +1,28 @@
 // =================================================================
-//  ESP32-S3-CAM  -  FINAL VERSION (new 5MP camera board)
+//  ESP32-S3-CAM  -  FINAL VERSION (OV3660 sensor)
 //  Acts as a TCP SERVER, advertised via mDNS as "esp32cam.local".
 //  Tries each known Wi-Fi network in order until one connects.
 //
-//  *** IMPORTANT - PIN MAPPING STATUS ***
-//  This board was purchased without confirmed official pin
-//  documentation. The camera pin numbers below are the
-//  "CAMERA_MODEL_ESP32S3_EYE" mapping - the configuration most
-//  commonly cited across multiple independent sources (Arduino
-//  Forum, Espressif GitHub discussions) for this exact style of
-//  generic ESP32-S3-WROOM CAM board (FPC ribbon camera connector,
-//  dual USB-C, EN/RST + BOOT buttons, N16R8 module).
-//  This is the best available estimate, NOT a confirmed fact.
-//  BEFORE relying on this in the final project: verify each pin
-//  with a multimeter in continuity mode between each FPC connector
-//  contact and the corresponding labeled GPIO pin on the board
-//  edge. If frame capture fails or the image looks wrong, this
-//  pin map is the first thing to re-check.
+//  Confirmed working configuration:
+//    - PSRAM frame buffers (requires Tools > PSRAM > OPI PSRAM,
+//      and Tools > Flash Size > 16MB in the Arduino IDE menus)
+//    - XCLK at 10MHz - confirmed to eliminate color/noise artifacts
+//      seen at the default 20MHz on this board+sensor combination
+//    - OV3660-specific color correction (documented Espressif fix)
+//    - Frame size sanity threshold raised for this sensor's larger
+//      VGA JPEG output
+//
+//  NOTE: this firmware calls set_vflip(1) for OV3660, so the image
+//  arrives at the PC flipped 180 degrees. The Python-side
+//  decode_frame() function must apply cv2.rotate(image,
+//  cv2.ROTATE_180) to compensate - already done in all project
+//  Python files.
 // =================================================================
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include "esp_camera.h"
 
-// -----------------------------------------------------------------
-//  Camera pin map - ESP32S3_EYE-style (best available estimate,
-//  see warning above). PWDN and RESET are not used on this board
-//  design (-1 means "not connected / not needed").
-// -----------------------------------------------------------------
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM     15
@@ -45,10 +40,6 @@
 #define HREF_GPIO_NUM      7
 #define PCLK_GPIO_NUM     13
 
-// -----------------------------------------------------------------
-//  Known Wi-Fi networks - tries each one in order, cycling forever
-//  until one connects. Add more rows here as needed.
-// -----------------------------------------------------------------
 struct WifiNetwork {
   const char* ssid;
   const char* password;
@@ -66,13 +57,6 @@ WiFiServer tcpServer(SERVER_PORT);
 WiFiClient pcConnection;
 
 
-// -----------------------------------------------------------------
-//  Function: connectToWiFi
-//  What it does: keeps cycling through knownNetworks[] FOREVER
-//  until one connects, resetting the Wi-Fi driver state fully
-//  before each attempt to avoid the "cannot set config" error
-//  seen when switching networks too quickly.
-// -----------------------------------------------------------------
 void connectToWiFi() {
   WiFi.mode(WIFI_STA);
   delay(100);
@@ -130,20 +114,6 @@ void connectToWiFi() {
 }
 
 
-// -----------------------------------------------------------------
-//  Function: initCamera
-//  What it does: configures the camera driver. Resolution is
-//  DELIBERATELY kept at VGA (640x480), not the sensor's full 5MP
-//  capability - this is a conscious decision carried over from
-//  earlier testing: higher resolution means larger JPEG frames,
-//  which means more data to transmit over Wi-Fi, which directly
-//  hurt tracking latency on weaker signal connections. The 5MP
-//  sensor gives us that option for the future, not an obligation
-//  to use it now. Two frame buffers + CAMERA_GRAB_LATEST prevent
-//  the buffer-tearing (merged/corrupt frames) issue solved earlier.
-//  fb_location is explicitly set to PSRAM, since this board has
-//  8MB of it available - safer than relying on limited internal SRAM.
-// -----------------------------------------------------------------
 bool initCamera() {
   camera_config_t config;
 
@@ -167,36 +137,39 @@ bool initCamera() {
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer   = LEDC_TIMER_0;
 
-  config.xclk_freq_hz  = 20000000;
+  config.xclk_freq_hz  = 10000000;
   config.pixel_format  = PIXFORMAT_JPEG;
-  config.frame_size    = FRAMESIZE_VGA;         // 640x480 - deliberate choice, see comment above
-  config.jpeg_quality  = 10;
+  config.frame_size    = FRAMESIZE_VGA;
+  config.jpeg_quality  = 12;
   config.fb_count      = 2;
   config.grab_mode     = CAMERA_GRAB_LATEST;
-  config.fb_location   = CAMERA_FB_IN_PSRAM;    // NEW: this board has 8MB PSRAM, use it
+  config.fb_location   = CAMERA_FB_IN_PSRAM;
 
   esp_err_t result = esp_camera_init(&config);
 
   if (result != ESP_OK) {
     Serial.print("Camera init failed with error code: ");
     Serial.println(result);
-    Serial.println("If this fails, the pin mapping above is the most likely cause - verify with a multimeter.");
+    Serial.println("Check: Tools > PSRAM > OPI PSRAM must be enabled in Arduino IDE.");
     return false;
   }
 
   Serial.println("Camera initialized successfully.");
+
+  sensor_t * s = esp_camera_sensor_get();
+  if (s->id.PID == OV3660_PID) {
+    Serial.println("OV3660 sensor detected - applying color correction.");
+    s->set_vflip(s, 1);
+    s->set_brightness(s, 1);
+    s->set_saturation(s, -2);
+  } else {
+    Serial.println("Non-OV3660 sensor detected - skipping OV3660-specific correction.");
+  }
+
   return true;
 }
 
 
-// -----------------------------------------------------------------
-//  Function: sendAllBytes
-//  What it does: TCP write() is not guaranteed to send every byte
-//  in one call. This function keeps sending the remaining bytes
-//  until everything is out, and correctly detects failure using a
-//  SIGNED type (so a -1 error return doesn't silently wrap around
-//  into a huge positive number).
-// -----------------------------------------------------------------
 void sendAllBytes(const uint8_t* data, size_t totalLength) {
   size_t sentSoFar = 0;
 
@@ -214,17 +187,8 @@ void sendAllBytes(const uint8_t* data, size_t totalLength) {
 }
 
 
-// -----------------------------------------------------------------
-//  Function: isValidJpeg
-//  What it does: every valid JPEG file must start with bytes
-//  0xFF 0xD8 and end with bytes 0xFF 0xD9. We also reject frames
-//  that are unusually large - a normal single VGA JPEG at our
-//  quality setting runs roughly 10,000-18,000 bytes, so anything
-//  much bigger is almost certainly two frames stuck together in
-//  the camera's shared buffer.
-// -----------------------------------------------------------------
 bool isValidJpeg(const uint8_t* data, size_t length) {
-  const size_t MAX_REASONABLE_SIZE = 25000;
+  const size_t MAX_REASONABLE_SIZE = 35000;
 
   if (length < 4 || length > MAX_REASONABLE_SIZE) {
     return false;
@@ -237,11 +201,6 @@ bool isValidJpeg(const uint8_t* data, size_t length) {
 }
 
 
-// -----------------------------------------------------------------
-//  Function: captureAndSendFrame
-//  What it does: grabs one JPEG frame, discards it if it's corrupt
-//  or oversized, otherwise sends it to the PC and measures timing.
-// -----------------------------------------------------------------
 void captureAndSendFrame() {
   unsigned long startTime = millis();
 
@@ -280,13 +239,6 @@ void captureAndSendFrame() {
 }
 
 
-// -----------------------------------------------------------------
-//  Function: checkWiFiStillConnected
-//  What it does: with a weak/unstable signal, the connection can
-//  drop mid-session, not just at startup. This checks every loop
-//  iteration and re-runs the full connect procedure if we've lost
-//  the network.
-// -----------------------------------------------------------------
 void checkWiFiStillConnected() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Wi-Fi connection lost - reconnecting...");
@@ -296,17 +248,13 @@ void checkWiFiStillConnected() {
 }
 
 
-// =================================================================
-//  MAIN PROGRAM
-// =================================================================
-
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
   connectToWiFi();
 
-  delay(200);   // Brief settle time before camera init
+  delay(200);
 
   if (!initCamera()) {
     Serial.println("Stopping - camera did not initialize.");

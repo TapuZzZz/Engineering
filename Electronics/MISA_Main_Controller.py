@@ -28,26 +28,17 @@ CAMERA_PORT = 8000
 MOTOR_ESP_HOST = "esp32motors.local"
 MOTOR_ESP_PORT = 9000
 
-DASHBOARD_PORT = 8080   # Separate from camera(8000) and motors(9000)
+DASHBOARD_PORT = 8080
 
 FRAME_WIDTH  = 640
 FRAME_HEIGHT = 480
 
-# -----------------------------------------------------------------
-#  Servo safety limits - MUST MATCH the ESP32-S3 Actuation Controller firmware
-# -----------------------------------------------------------------
 PAN_MIN_ANGLE, PAN_MAX_ANGLE   = 20.0, 160.0
 TILT_MIN_ANGLE, TILT_MAX_ANGLE = 60.0, 150.0
 
-# -----------------------------------------------------------------
-#  Direction correction
-# -----------------------------------------------------------------
 PAN_DIRECTION  = 1.0
 TILT_DIRECTION = -1.0
 
-# -----------------------------------------------------------------
-#  Control tuning - PI controller (Proportional + Integral)
-# -----------------------------------------------------------------
 PIXELS_TO_DEGREES_GAIN = 0.012
 INTEGRAL_GAIN          = 0.0004
 INTEGRAL_MAX           = 150.0
@@ -58,16 +49,10 @@ SCAN_STEP_DEGREES = 0.3
 SCAN_PAN_MIN = 40.0
 SCAN_PAN_MAX = 140.0
 
-# -----------------------------------------------------------------
-#  Detection filtering
-# -----------------------------------------------------------------
 MAX_JUMP_PIXELS = 120.0
 FRAMES_LOST_BEFORE_ACCEPTING_JUMP = 5
 SMOOTHING_ALPHA = 0.4
 
-# -----------------------------------------------------------------
-#  Tracking state
-# -----------------------------------------------------------------
 integral_error_x = 0.0
 integral_error_y = 0.0
 scan_direction = 1
@@ -76,10 +61,6 @@ smoothed_center_x = None
 smoothed_center_y = None
 frames_since_accepted_detection = 999
 
-# -----------------------------------------------------------------
-#  Shared dashboard state - read by the WebSocket, written by the
-#  main tracking loop.
-# -----------------------------------------------------------------
 system_state = {
     "status": "starting",
     "pan": 90.0,
@@ -96,12 +77,6 @@ system_state = {
 LOG_FILE_PATH = "turret_events.jsonl"
 
 
-# -----------------------------------------------------------------
-#  Function: log_event
-#  What it does: appends one JSON line per event to a local log
-#  file - a deliberate JSONL choice, not a database, so each line
-#  maps directly to one future database row when needed.
-# -----------------------------------------------------------------
 def log_event(event_name, **details):
     entry = {
         "time": datetime.now(timezone.utc).isoformat(),
@@ -112,9 +87,6 @@ def log_event(event_name, **details):
         log_file.write(json.dumps(entry) + "\n")
 
 
-# -----------------------------------------------------------------
-#  Function: load_face_detector
-# -----------------------------------------------------------------
 def load_face_detector():
     cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     detector = cv2.CascadeClassifier(cascade_path)
@@ -125,9 +97,6 @@ def load_face_detector():
     return detector
 
 
-# -----------------------------------------------------------------
-#  Function: receive_exact
-# -----------------------------------------------------------------
 def receive_exact(connection, num_bytes):
     data = b""
     while len(data) < num_bytes:
@@ -138,9 +107,6 @@ def receive_exact(connection, num_bytes):
     return data
 
 
-# -----------------------------------------------------------------
-#  Function: receive_one_frame
-# -----------------------------------------------------------------
 def receive_one_frame(connection):
     size_bytes = receive_exact(connection, 4)
     frame_size = struct.unpack("<I", size_bytes)[0]
@@ -148,9 +114,6 @@ def receive_one_frame(connection):
     return jpeg_bytes
 
 
-# -----------------------------------------------------------------
-#  Function: decode_frame
-# -----------------------------------------------------------------
 def decode_frame(jpeg_bytes):
     jpeg_array = np.frombuffer(jpeg_bytes, dtype=np.uint8)
     image = cv2.imdecode(jpeg_array, cv2.IMREAD_COLOR)
@@ -158,12 +121,13 @@ def decode_frame(jpeg_bytes):
     if image is None:
         return None
 
+    # The camera firmware calls set_vflip(1) for the OV3660 sensor's
+    # documented color correction - this rotation compensates so the
+    # image displays upright on the PC side.
+    image = cv2.rotate(image, cv2.ROTATE_180)
     return image
 
 
-# -----------------------------------------------------------------
-#  Function: find_best_face_raw
-# -----------------------------------------------------------------
 def find_best_face_raw(detector, image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -183,9 +147,6 @@ def find_best_face_raw(detector, image):
     return (x, y, x + w, y + h)
 
 
-# -----------------------------------------------------------------
-#  Function: filter_detection
-# -----------------------------------------------------------------
 def filter_detection(raw_box):
     global smoothed_center_x, smoothed_center_y, frames_since_accepted_detection
 
@@ -223,16 +184,10 @@ def filter_detection(raw_box):
             int(smoothed_center_x + half_width), int(smoothed_center_y + half_height))
 
 
-# -----------------------------------------------------------------
-#  Function: clamp
-# -----------------------------------------------------------------
 def clamp(value, min_value, max_value):
     return max(min_value, min(value, max_value))
 
 
-# -----------------------------------------------------------------
-#  Function: rate_limit_step
-# -----------------------------------------------------------------
 def rate_limit_step(previous_value, requested_value, max_step):
     delta = requested_value - previous_value
     if delta > max_step:
@@ -242,9 +197,6 @@ def rate_limit_step(previous_value, requested_value, max_step):
     return requested_value
 
 
-# -----------------------------------------------------------------
-#  Function: compute_tracking_command
-# -----------------------------------------------------------------
 def compute_tracking_command(box, current_pan, current_tilt):
     global integral_error_x, integral_error_y
 
@@ -286,32 +238,21 @@ def compute_tracking_command(box, current_pan, current_tilt):
     new_pan  = clamp(new_pan,  PAN_MIN_ANGLE,  PAN_MAX_ANGLE)
     new_tilt = clamp(new_tilt, TILT_MIN_ANGLE, TILT_MAX_ANGLE)
 
-    print(f"[TRACK] error=({error_x:.1f},{error_y:.1f}) -> pan={new_pan:.2f} tilt={new_tilt:.2f}")
-
     return new_pan, new_tilt
 
 
-# -----------------------------------------------------------------
-#  Function: reset_integral
-# -----------------------------------------------------------------
 def reset_integral():
     global integral_error_x, integral_error_y
     integral_error_x = 0.0
     integral_error_y = 0.0
 
 
-# -----------------------------------------------------------------
-#  Function: reset_smoothing
-# -----------------------------------------------------------------
 def reset_smoothing():
     global smoothed_center_x, smoothed_center_y
     smoothed_center_x = None
     smoothed_center_y = None
 
 
-# -----------------------------------------------------------------
-#  Function: compute_scan_command
-# -----------------------------------------------------------------
 def compute_scan_command(current_pan):
     global scan_direction
 
@@ -329,26 +270,16 @@ def compute_scan_command(current_pan):
     return new_pan, new_tilt
 
 
-# -----------------------------------------------------------------
-#  Function: check_laser_key
-# -----------------------------------------------------------------
 def check_laser_key(key_code):
     SPACEBAR = 32
     return 1 if key_code == SPACEBAR else 0
 
 
-# -----------------------------------------------------------------
-#  Function: send_motor_command
-# -----------------------------------------------------------------
 def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state, locked_state):
     command_line = f"{pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}\n"
     motor_socket.sendall(command_line.encode("utf-8"))
-    print(f"[SENT] {pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}")
 
 
-# -----------------------------------------------------------------
-#  Function: draw_overlay
-# -----------------------------------------------------------------
 def draw_overlay(image, box, status_text):
     center_x, center_y = FRAME_WIDTH // 2, FRAME_HEIGHT // 2
 
@@ -371,52 +302,35 @@ def draw_overlay(image, box, status_text):
     return key_code
 
 
-# =================================================================
-#  WEB DASHBOARD - FastAPI app, runs in a background thread
-# =================================================================
-
 dashboard_app = FastAPI()
 
 
 @dashboard_app.get("/")
 def serve_dashboard_page():
-    # CHANGED: filename corrected to match the actual file on disk exactly
-    # (Linux is case-sensitive - "dashboard.html" and "MISA_Dashboard.html"
-    # are two different files as far as the filesystem is concerned).
     with open("MISA_Dashboard.html", "r", encoding="utf-8") as html_file:
         return HTMLResponse(html_file.read())
 
 
 @dashboard_app.websocket("/ws")
 async def dashboard_websocket(websocket: WebSocket):
-    """
-    What it does: accepts a browser connection and pushes the
-    current system_state as JSON, about 6 times per second, for as
-    long as the browser tab stays open.
-    """
     await websocket.accept()
     try:
         while True:
             await websocket.send_text(json.dumps(system_state))
             await __import__("asyncio").sleep(0.15)
     except Exception:
-        pass   # Browser closed the tab or connection dropped - nothing to clean up
+        pass
 
 
 def run_dashboard_server():
     uvicorn.run(dashboard_app, host="0.0.0.0", port=DASHBOARD_PORT, log_level="warning")
 
 
-# =================================================================
-#  MAIN PROGRAM
-# =================================================================
-
 def main():
     print("Loading face detector...")
     detector = load_face_detector()
     print("Face detector loaded.")
 
-    # --- Start the web dashboard in the background ---
     dashboard_thread = threading.Thread(target=run_dashboard_server, daemon=True)
     dashboard_thread.start()
     print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
