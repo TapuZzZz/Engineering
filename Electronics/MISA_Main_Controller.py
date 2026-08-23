@@ -1,7 +1,23 @@
 # =================================================================
 #  MISA MAIN CONTROLLER - Camera receive (via mDNS) + FACE detection
-#  + motor commands to ESP32 DevKit (via mDNS) + live web dashboard.
+#  + motor commands to ESP32 DevKit (via mDNS) + live web dashboard
+#  + return telemetry channel from the DevKit (LiDAR / DFPlayer /
+#  network name).
 #  Laser fires ONLY while spacebar is held down by a human.
+#
+#  CHANGES IN THIS VERSION:
+#    - FRAME_WIDTH/FRAME_HEIGHT updated to 800x600 (SVGA) to match
+#      the new aircraft-detection camera firmware. This matters:
+#      all tracking error calculations are relative to frame
+#      center, so a mismatch here silently breaks aiming.
+#    - Added a background thread that reads TELEMETRY lines sent by
+#      the DevKit on the SAME motor_socket used for sending
+#      pan/tilt/laser commands, and updates system_state with
+#      distance_cm / dfplayer_ready / motor_network so the
+#      dashboard can display them.
+#    - Added a threading.Lock around all writes to motor_socket,
+#      since it's now read from a background thread AND written to
+#      from the main loop at the same time.
 # =================================================================
 
 import socket
@@ -28,17 +44,29 @@ CAMERA_PORT = 8000
 MOTOR_ESP_HOST = "esp32motors.local"
 MOTOR_ESP_PORT = 9000
 
-DASHBOARD_PORT = 8080
+DASHBOARD_PORT = 8080   # Separate from camera(8000) and motors(9000)
 
-FRAME_WIDTH  = 640
-FRAME_HEIGHT = 480
+# Matches the SVGA (800x600) frame size set in the aircraft-
+# detection camera firmware. If the camera firmware's
+# CAMERA_FRAME_SIZE ever changes, this MUST be updated to match.
+FRAME_WIDTH  = 800
+FRAME_HEIGHT = 600
 
+# -----------------------------------------------------------------
+#  Servo safety limits - MUST MATCH the ESP32-S3 DevKit firmware
+# -----------------------------------------------------------------
 PAN_MIN_ANGLE, PAN_MAX_ANGLE   = 20.0, 160.0
 TILT_MIN_ANGLE, TILT_MAX_ANGLE = 60.0, 150.0
 
-PAN_DIRECTION  = 1.0
+# -----------------------------------------------------------------
+#  Direction correction
+# -----------------------------------------------------------------
+PAN_DIRECTION  = -1.0
 TILT_DIRECTION = -1.0
 
+# -----------------------------------------------------------------
+#  Control tuning - PI controller (Proportional + Integral)
+# -----------------------------------------------------------------
 PIXELS_TO_DEGREES_GAIN = 0.012
 INTEGRAL_GAIN          = 0.0004
 INTEGRAL_MAX           = 150.0
@@ -49,10 +77,16 @@ SCAN_STEP_DEGREES = 0.3
 SCAN_PAN_MIN = 40.0
 SCAN_PAN_MAX = 140.0
 
+# -----------------------------------------------------------------
+#  Detection filtering
+# -----------------------------------------------------------------
 MAX_JUMP_PIXELS = 120.0
 FRAMES_LOST_BEFORE_ACCEPTING_JUMP = 5
 SMOOTHING_ALPHA = 0.4
 
+# -----------------------------------------------------------------
+#  Tracking state
+# -----------------------------------------------------------------
 integral_error_x = 0.0
 integral_error_y = 0.0
 scan_direction = 1
@@ -61,6 +95,10 @@ smoothed_center_x = None
 smoothed_center_y = None
 frames_since_accepted_detection = 999
 
+# -----------------------------------------------------------------
+#  Shared dashboard state - read by the WebSocket, written by the
+#  main tracking loop AND by the telemetry reader thread.
+# -----------------------------------------------------------------
 system_state = {
     "status": "starting",
     "pan": 90.0,
@@ -72,11 +110,27 @@ system_state = {
     "motor_connected": False,
     "frame_count": 0,
     "last_update": None,
+    "distance_cm": -1,
+    "dfplayer_ready": False,
+    "motor_network": "---",
 }
 
 LOG_FILE_PATH = "turret_events.jsonl"
 
+# -----------------------------------------------------------------
+#  Lock protecting motor_socket, since it's now written to from the
+#  main loop (send_motor_command) and read from in the background
+#  telemetry thread at the same time. sendall() and recv() on the
+#  same socket from two threads is generally fine at the OS level,
+#  but the lock also protects the small amount of shared Python
+#  state (system_state) from being updated inconsistently.
+# -----------------------------------------------------------------
+motor_socket_lock = threading.Lock()
 
+
+# -----------------------------------------------------------------
+#  Function: log_event
+# -----------------------------------------------------------------
 def log_event(event_name, **details):
     entry = {
         "time": datetime.now(timezone.utc).isoformat(),
@@ -87,6 +141,9 @@ def log_event(event_name, **details):
         log_file.write(json.dumps(entry) + "\n")
 
 
+# -----------------------------------------------------------------
+#  Function: load_face_detector
+# -----------------------------------------------------------------
 def load_face_detector():
     cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     detector = cv2.CascadeClassifier(cascade_path)
@@ -97,6 +154,9 @@ def load_face_detector():
     return detector
 
 
+# -----------------------------------------------------------------
+#  Function: receive_exact
+# -----------------------------------------------------------------
 def receive_exact(connection, num_bytes):
     data = b""
     while len(data) < num_bytes:
@@ -107,6 +167,9 @@ def receive_exact(connection, num_bytes):
     return data
 
 
+# -----------------------------------------------------------------
+#  Function: receive_one_frame
+# -----------------------------------------------------------------
 def receive_one_frame(connection):
     size_bytes = receive_exact(connection, 4)
     frame_size = struct.unpack("<I", size_bytes)[0]
@@ -114,6 +177,9 @@ def receive_one_frame(connection):
     return jpeg_bytes
 
 
+# -----------------------------------------------------------------
+#  Function: decode_frame
+# -----------------------------------------------------------------
 def decode_frame(jpeg_bytes):
     jpeg_array = np.frombuffer(jpeg_bytes, dtype=np.uint8)
     image = cv2.imdecode(jpeg_array, cv2.IMREAD_COLOR)
@@ -121,21 +187,42 @@ def decode_frame(jpeg_bytes):
     if image is None:
         return None
 
-    # The camera firmware calls set_vflip(1) for the OV3660 sensor's
-    # documented color correction - this rotation compensates so the
-    # image displays upright on the PC side.
+    # The camera firmware calls set_vflip(1) on the OV3660 sensor to
+    # correct for its physical mounting orientation on this board.
+    # That leaves the image arriving here rotated 180 degrees, so we
+    # rotate it back before any detection or display happens.
     image = cv2.rotate(image, cv2.ROTATE_180)
+
     return image
 
 
+# -----------------------------------------------------------------
+#  Detection performance: running Haar cascade detectMultiScale on
+#  the full SVGA (800x600) frame is the dominant cost per loop
+#  iteration - detecting on a downscaled copy is usually a 3-4x
+#  speedup with minimal accuracy loss, since we only need the box
+#  location, not fine detail, for tracking purposes.
+# -----------------------------------------------------------------
+DETECTION_DOWNSCALE = 0.5
+
+
+# -----------------------------------------------------------------
+#  Function: find_best_face_raw
+# -----------------------------------------------------------------
 def find_best_face_raw(detector, image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    small_gray = cv2.resize(
+        gray, None,
+        fx=DETECTION_DOWNSCALE, fy=DETECTION_DOWNSCALE,
+        interpolation=cv2.INTER_AREA
+    )
+
     faces = detector.detectMultiScale(
-        gray,
+        small_gray,
         scaleFactor=1.1,
         minNeighbors=5,
-        minSize=(40, 40)
+        minSize=(20, 20)
     )
 
     if len(faces) == 0:
@@ -144,9 +231,18 @@ def find_best_face_raw(detector, image):
     best_face = max(faces, key=lambda f: f[2] * f[3])
     x, y, w, h = best_face
 
-    return (x, y, x + w, y + h)
+    scale_back = 1.0 / DETECTION_DOWNSCALE
+    x1 = int(x * scale_back)
+    y1 = int(y * scale_back)
+    x2 = int((x + w) * scale_back)
+    y2 = int((y + h) * scale_back)
+
+    return (x1, y1, x2, y2)
 
 
+# -----------------------------------------------------------------
+#  Function: filter_detection
+# -----------------------------------------------------------------
 def filter_detection(raw_box):
     global smoothed_center_x, smoothed_center_y, frames_since_accepted_detection
 
@@ -184,10 +280,16 @@ def filter_detection(raw_box):
             int(smoothed_center_x + half_width), int(smoothed_center_y + half_height))
 
 
+# -----------------------------------------------------------------
+#  Function: clamp
+# -----------------------------------------------------------------
 def clamp(value, min_value, max_value):
     return max(min_value, min(value, max_value))
 
 
+# -----------------------------------------------------------------
+#  Function: rate_limit_step
+# -----------------------------------------------------------------
 def rate_limit_step(previous_value, requested_value, max_step):
     delta = requested_value - previous_value
     if delta > max_step:
@@ -197,6 +299,9 @@ def rate_limit_step(previous_value, requested_value, max_step):
     return requested_value
 
 
+# -----------------------------------------------------------------
+#  Function: compute_tracking_command
+# -----------------------------------------------------------------
 def compute_tracking_command(box, current_pan, current_tilt):
     global integral_error_x, integral_error_y
 
@@ -238,21 +343,32 @@ def compute_tracking_command(box, current_pan, current_tilt):
     new_pan  = clamp(new_pan,  PAN_MIN_ANGLE,  PAN_MAX_ANGLE)
     new_tilt = clamp(new_tilt, TILT_MIN_ANGLE, TILT_MAX_ANGLE)
 
+    print(f"[TRACK] error=({error_x:.1f},{error_y:.1f}) -> pan={new_pan:.2f} tilt={new_tilt:.2f}")
+
     return new_pan, new_tilt
 
 
+# -----------------------------------------------------------------
+#  Function: reset_integral
+# -----------------------------------------------------------------
 def reset_integral():
     global integral_error_x, integral_error_y
     integral_error_x = 0.0
     integral_error_y = 0.0
 
 
+# -----------------------------------------------------------------
+#  Function: reset_smoothing
+# -----------------------------------------------------------------
 def reset_smoothing():
     global smoothed_center_x, smoothed_center_y
     smoothed_center_x = None
     smoothed_center_y = None
 
 
+# -----------------------------------------------------------------
+#  Function: compute_scan_command
+# -----------------------------------------------------------------
 def compute_scan_command(current_pan):
     global scan_direction
 
@@ -270,16 +386,90 @@ def compute_scan_command(current_pan):
     return new_pan, new_tilt
 
 
+# -----------------------------------------------------------------
+#  Function: check_laser_key
+# -----------------------------------------------------------------
 def check_laser_key(key_code):
     SPACEBAR = 32
     return 1 if key_code == SPACEBAR else 0
 
 
+# -----------------------------------------------------------------
+#  Function: send_motor_command
+#  Wrapped with motor_socket_lock since the socket is now shared
+#  with the background telemetry reader thread.
+# -----------------------------------------------------------------
 def send_motor_command(motor_socket, pan_angle, tilt_angle, laser_state, locked_state):
     command_line = f"{pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}\n"
-    motor_socket.sendall(command_line.encode("utf-8"))
+    with motor_socket_lock:
+        motor_socket.sendall(command_line.encode("utf-8"))
+    print(f"[SENT] {pan_angle:.1f},{tilt_angle:.1f},{laser_state},{locked_state}")
 
 
+# -----------------------------------------------------------------
+#  Function: telemetry_reader_loop
+#  What it does: runs in a background thread for the lifetime of
+#  the motor connection. Reads raw bytes off motor_socket, splits
+#  them into lines, and parses any line starting with "TELEMETRY,"
+#  into system_state. Matches the DevKit firmware's format exactly:
+#
+#    TELEMETRY,<distance_cm>,<dfplayer_ready:0/1>,<network_name>\n
+#
+#  NOTE: this thread only READS from the socket. All WRITES go
+#  through send_motor_command(), which takes motor_socket_lock.
+#  recv() and sendall() on the same socket from two threads is
+#  safe at the OS level - the lock here is mainly to keep
+#  system_state updates orderly, not to protect the socket itself.
+# -----------------------------------------------------------------
+def telemetry_reader_loop(motor_socket):
+    print("Telemetry reader thread started.")
+    buffer = ""
+
+    while True:
+        try:
+            chunk = motor_socket.recv(256)
+        except (ConnectionError, OSError) as read_error:
+            print(f"Telemetry reader stopping - socket error: {read_error}")
+            break
+
+        if not chunk:
+            print("Telemetry reader stopping - motor connection closed.")
+            break
+
+        buffer += chunk.decode("utf-8", errors="ignore")
+
+        while "\n" in buffer:
+            line, buffer = buffer.split("\n", 1)
+            line = line.strip()
+
+            if not line.startswith("TELEMETRY,"):
+                continue
+
+            parts = line.split(",")
+            if len(parts) != 4:
+                print(f"Malformed telemetry line, ignoring: {line}")
+                continue
+
+            try:
+                distance_cm = int(parts[1])
+            except ValueError:
+                distance_cm = -1
+
+            dfplayer_ready = (parts[2] == "1")
+            network_name = parts[3]
+
+            system_state["distance_cm"] = distance_cm
+            system_state["dfplayer_ready"] = dfplayer_ready
+            system_state["motor_network"] = network_name
+
+        system_state["motor_connected"] = True
+
+    system_state["motor_connected"] = False
+
+
+# -----------------------------------------------------------------
+#  Function: draw_overlay
+# -----------------------------------------------------------------
 def draw_overlay(image, box, status_text):
     center_x, center_y = FRAME_WIDTH // 2, FRAME_HEIGHT // 2
 
@@ -301,6 +491,10 @@ def draw_overlay(image, box, status_text):
     key_code = cv2.waitKey(1) & 0xFF
     return key_code
 
+
+# =================================================================
+#  WEB DASHBOARD - FastAPI app, runs in a background thread
+# =================================================================
 
 dashboard_app = FastAPI()
 
@@ -326,6 +520,10 @@ def run_dashboard_server():
     uvicorn.run(dashboard_app, host="0.0.0.0", port=DASHBOARD_PORT, log_level="warning")
 
 
+# =================================================================
+#  MAIN PROGRAM
+# =================================================================
+
 def main():
     print("Loading face detector...")
     detector = load_face_detector()
@@ -347,6 +545,11 @@ def main():
     print("Connected to motor controller.")
     system_state["motor_connected"] = True
 
+    telemetry_thread = threading.Thread(
+        target=telemetry_reader_loop, args=(motor_socket,), daemon=True
+    )
+    telemetry_thread.start()
+
     log_event("system_started")
 
     current_pan  = 90.0
@@ -358,6 +561,8 @@ def main():
     was_locked_previously = False
 
     while True:
+        loop_start_time = time.time()
+
         try:
             jpeg_bytes = receive_one_frame(camera_connection)
         except ConnectionError:
@@ -366,13 +571,19 @@ def main():
             log_event("camera_disconnected")
             break
 
+        after_receive_time = time.time()
+
         image = decode_frame(jpeg_bytes)
 
         if image is None:
             continue
 
+        after_decode_time = time.time()
+
         raw_box = find_best_face_raw(detector, image)
         box = filter_detection(raw_box)
+
+        after_detect_time = time.time()
 
         if box is not None:
             frames_without_detection = 0
@@ -397,7 +608,10 @@ def main():
         was_locked_previously = (locked_state == 1)
 
         try:
-            key_code = draw_overlay(image, box, f"{status_text} | pan={current_pan:.1f} tilt={current_tilt:.1f}")
+            key_code = draw_overlay(
+                image, box,
+                f"{status_text} | pan={current_pan:.1f} tilt={current_tilt:.1f} | fps={system_state['fps']:.1f}"
+            )
             laser_state = check_laser_key(key_code)
 
             if laser_state == 1 and system_state.get("laser") != 1:
@@ -422,6 +636,16 @@ def main():
         system_state["locked"] = locked_state
         system_state["frame_count"] += 1
         system_state["last_update"] = datetime.now(timezone.utc).isoformat()
+
+        if system_state["frame_count"] % 30 == 0:
+            loop_end_time = time.time()
+            print(
+                f"[TIMING] receive={1000*(after_receive_time - loop_start_time):.1f}ms "
+                f"decode={1000*(after_decode_time - after_receive_time):.1f}ms "
+                f"detect={1000*(after_detect_time - after_decode_time):.1f}ms "
+                f"display+send={1000*(loop_end_time - after_detect_time):.1f}ms "
+                f"total={1000*(loop_end_time - loop_start_time):.1f}ms"
+            )
 
     camera_connection.close()
     motor_socket.close()

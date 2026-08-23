@@ -83,8 +83,8 @@ WiFiClient pcConnection;
 //  (1600x1200) for more distant/small targets at the cost of fps
 //  and higher bandwidth over WiFi.
 // -----------------------------------------------------------------
-const framesize_t CAMERA_FRAME_SIZE = FRAMESIZE_SVGA;
-const int         CAMERA_JPEG_QUALITY = 15;   // Raised from 10 - faster on-sensor JPEG compression, smaller frames, no resolution loss
+const framesize_t CAMERA_FRAME_SIZE = FRAMESIZE_VGA;
+const int         CAMERA_JPEG_QUALITY = 4;   // Found via live tuning - user confirmed smooth playback at this quality
 
 bool cameraIsReady = false;
 unsigned long lastCameraRetryTime = 0;
@@ -183,34 +183,39 @@ void describeCameraError(esp_err_t result) {
 //  than the close-range portrait tuning used for face tracking.
 // -----------------------------------------------------------------
 void tuneSensorForAircraftDetection(sensor_t* s) {
-  // Reduce exposure bias so a bright sky doesn't saturate and
-  // silhouette out the aircraft entirely.
-  s->set_aec2(s, 1);
-  s->set_ae_level(s, -1);
+  // Settings below were found empirically via the live tuning tool
+  // (ESP32_S3_CAM_TuningServer.ino) and confirmed smooth by the user
+  // at VGA/quality=4. Indoor-lighting values - see note on AE_LEVEL
+  // below for the outdoor/real-deployment adjustment needed.
 
-  // Slightly increase sharpness/contrast for better edge definition
-  // on small targets. Values outside -2..2 are generally ignored
-  // by the driver, so this is a conservative bump.
+  // Manual exposure - found to give better brightness than pure
+  // gain increases, with less noise/flicker than pushing gain alone.
+  s->set_exposure_ctrl(s, 0);
+  s->set_aec_value(s, 550);   // Lowered from 699 - slightly less motion blur, still bright enough per user
+
+  s->set_gain_ctrl(s, 1);                    // Auto gain, to fine-tune around the manual exposure.
+  s->set_gainceiling(s, GAINCEILING_64X);
+
+  // AE_LEVEL=+1 was needed for dim INDOOR testing. In actual outdoor
+  // deployment (bright sky background), this should likely go back
+  // toward -1 (the original aircraft-detection default) to avoid
+  // saturating the sky - re-test outdoors before relying on this.
+  s->set_ae_level(s, 1);
+
   s->set_sharpness(s, 1);
   s->set_contrast(s, 1);
-
-  // Keep saturation neutral - color isn't diagnostic for aircraft
-  // silhouettes and oversaturation can add noise.
   s->set_saturation(s, 0);
 
-  // Explicitly DISABLE bad-pixel and white-pixel correction. These
-  // are designed to remove small isolated outlier pixels, which is
-  // exactly what a distant aircraft can look like - we don't want
-  // the sensor's cleanup pass erasing the target before it ever
-  // reaches Python.
+  // Kept OFF per the aircraft-detection design: BPC/WPC "cleanup"
+  // algorithms can erase a small distant aircraft that looks like a
+  // few outlier pixels. Confirmed with the user to keep this
+  // decision even though it made no visible difference in the
+  // close-range indoor test.
   s->set_bpc(s, 0);
   s->set_wpc(s, 0);
-
-  // Keep denoise off/low for the same reason - aggressive denoise
-  // blurs away small, low-contrast targets.
   s->set_denoise(s, 0);
 
-  Serial.println("Sensor tuned for aircraft/sky detection.");
+  Serial.println("Sensor tuned for aircraft/sky detection (live-tuned settings baked in).");
 }
 
 
@@ -249,6 +254,19 @@ bool tryInitCamera() {
   // next lever is NOT XCLK - it's checking/upgrading the physical
   // power supply, since we may be at this board's current ceiling
   // regardless of clock speed.
+  // FINAL DECISION: 16MHz is NOT usable on this board - confirmed
+  // unstable in TWO independent tests: once with the DevKit sharing
+  // power, and once with the camera completely isolated on its own
+  // supply (this second test ruled out shared-power as the cause).
+  // Both times: near-immediate "Send failed" / multi-second send
+  // stalls. This is an intrinsic limit of this board/sensor unit at
+  // 16MHz, not a wiring or software issue we can fix by tuning
+  // exposure or JPEG quality (both were tested and had no effect on
+  // the underlying stall). 14MHz is the reliable ceiling for this
+  // hardware. Further FPS gains beyond what 14MHz gives will need a
+  // hardware-side investigation (measuring this board's own power
+  // rail under load, trying a different USB cable/port or a
+  // dedicated 5V/2A supply) rather than more firmware tuning.
   config.xclk_freq_hz  = 14000000;
   config.pixel_format  = PIXFORMAT_JPEG;
   config.frame_size    = CAMERA_FRAME_SIZE;

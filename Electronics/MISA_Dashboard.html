@@ -121,6 +121,8 @@
     box-shadow: 0 0 18px 2px rgba(229,113,122,0.7);
   }
 
+  /* --- Pan/tilt gauge: signature element - shows servo position
+         live within its actual safety-limited range --- */
   .gauge-wrap {
     grid-column: span 2;
   }
@@ -233,6 +235,21 @@
       <div class="card-value small" id="frame-count">0</div>
     </div>
 
+    <div class="card">
+      <div class="card-label">LiDAR Range</div>
+      <div class="card-value small" id="distance-value">---</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Sound Module</div>
+      <div class="card-value small" id="dfplayer-value">---</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Motor Network</div>
+      <div class="card-value small" id="motor-network-value">---</div>
+    </div>
+
   </div>
 
   <footer>מיס"א · connects to ws://localhost:8080/ws</footer>
@@ -257,6 +274,7 @@
     ws.onmessage = (event) => {
       const state = JSON.parse(event.data);
 
+      // --- Connection dots ---
       const camDot = document.getElementById('cam-dot');
       const motorDot = document.getElementById('motor-dot');
       camDot.classList.toggle('connected', state.camera_connected);
@@ -264,20 +282,35 @@
       document.getElementById('cam-text').textContent = state.camera_connected ? 'ONLINE' : 'OFFLINE';
       document.getElementById('motor-text').textContent = state.motor_connected ? 'ONLINE' : 'OFFLINE';
 
+      // --- Status label ---
       const statusEl = document.getElementById('status-value');
       statusEl.textContent = state.status.toUpperCase();
       statusEl.className = 'card-value ' +
         (state.status === 'TRACKING FACE' ? 'status-tracking' :
          state.status === 'SCANNING' ? 'status-scanning' : 'status-holding');
 
+      // --- FPS / frame count ---
       document.getElementById('fps-value').textContent = state.fps.toFixed(1);
       document.getElementById('frame-count').textContent = state.frame_count;
 
+      // --- Gauges ---
       setGauge('pan-fill', 'pan-num', state.pan, PAN_MIN, PAN_MAX, '°');
       setGauge('tilt-fill', 'tilt-num', state.tilt, TILT_MIN, TILT_MAX, '°');
 
+      // --- Lock ---
       document.getElementById('lock-value').textContent = state.locked ? 'LOCKED' : '----';
 
+      // --- LiDAR / DFPlayer / motor network (from telemetry return channel) ---
+      const distEl = document.getElementById('distance-value');
+      distEl.textContent = state.distance_cm >= 0 ? `${state.distance_cm} cm` : '---';
+
+      const dfEl = document.getElementById('dfplayer-value');
+      dfEl.textContent = state.dfplayer_ready ? 'OK' : 'N/A';
+      dfEl.style.color = state.dfplayer_ready ? 'var(--ok)' : 'var(--danger)';
+
+      document.getElementById('motor-network-value').textContent = state.motor_network || '---';
+
+      // --- Laser ---
       const laserEl = document.getElementById('laser-indicator');
       if (state.laser) {
         laserEl.textContent = 'FIRING';
@@ -290,7 +323,7 @@
 
     ws.onclose = () => {
       document.getElementById('status-value').textContent = 'DISCONNECTED';
-      setTimeout(connectWebSocket, 1500);
+      setTimeout(connectWebSocket, 1500);   // Auto-retry if the Python process restarts
     };
   }
 
