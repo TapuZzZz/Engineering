@@ -1,0 +1,19 @@
+ERC report (2026-08-28T01:38:50, Encoding UTF8)
+Report includes: Errors
+
+***** Sheet /
+[power_pin_not_driven]: Input Power pin not driven by any Output Power pins
+    ; error
+    @(3450 mils, 5250 mils): Symbol #PWR03 Pin 1 [Power input, Line]
+[pin_to_pin]: Pins of type Open emitter and Power output are connected
+    ; error
+    @(6100 mils, 4500 mils): Symbol Q1 Pin 3 [E, Open emitter, Line]
+    @(5450 mils, 5850 mils): Symbol #FLG02 Pin 1 [pwr, Power output, Line]
+
+ ** ERC messages: 2  Errors 2  Warnings 0
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters
