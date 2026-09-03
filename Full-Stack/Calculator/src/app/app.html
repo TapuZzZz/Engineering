@@ -1,0 +1,51 @@
+
+<!-- Artyom Kiselhof Calculator -->
+<!-- Using Angular, Tailwind css, Type Script -->
+
+<div class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+  <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-2xl w-full max-w-xs">
+    
+    <div class="bg-slate-800 text-right text-4xl font-mono p-4 rounded-xl mb-6 overflow-x-auto min-h-[72px] flex items-center justify-end border border-slate-700">
+      {{ displayValue }}
+    </div>
+
+    <div class="grid grid-cols-4 gap-3">
+      
+      <button (click)="onClear()" class="col-span-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-bold py-3 rounded-xl transition">
+        C
+      </button>
+      <button (click)="onSelectOperator('/')" class="bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl transition">
+        ÷
+      </button>
+
+      <button (click)="onClickNumber('7')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">7</button>
+      <button (click)="onClickNumber('8')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">8</button>
+      <button (click)="onClickNumber('9')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">9</button>
+      <button (click)="onSelectOperator('*')" class="bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl transition">
+        *
+      </button>
+
+      <button (click)="onClickNumber('4')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">4</button>
+      <button (click)="onClickNumber('5')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">5</button>
+      <button (click)="onClickNumber('6')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">6</button>
+      <button (click)="onSelectOperator('-')" class="bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl transition">
+        -
+      </button>
+
+      <button (click)="onClickNumber('1')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">1</button>
+      <button (click)="onClickNumber('2')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">2</button>
+      <button (click)="onClickNumber('3')" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">3</button>
+      <button (click)="onSelectOperator('+')" class="bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl transition">
+        +
+      </button>
+
+      <button (click)="onClickNumber('0')" class="col-span-3 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold py-3 rounded-xl transition">
+        0
+      </button>
+      <button (click)="onCalculate()" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-3 rounded-xl transition">
+        =
+      </button>
+
+    </div>
+  </div>
+</div>
