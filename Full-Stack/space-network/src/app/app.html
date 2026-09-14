@@ -1,0 +1,12 @@
+<div class="main-container">
+  <header class="header">
+    <h1>{{ title }}</h1>
+    <p>Satellite Deployment and Communication Operations</p>
+  </header>
+
+  <div class="cards-wrapper">
+    @for (currentPlanet of planetsList; track currentPlanet.name) {
+      <app-card [planet]="currentPlanet"></app-card>
+    }
+  </div>
+</div>

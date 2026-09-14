@@ -1,0 +1,15 @@
+<div class="card-container">
+  <img [src]="planet.imageUrl" alt="Planet Image" class="planet-image">
+  
+  <h2 class="planet-title">{{ planet.name }}</h2>
+  <p class="planet-distance">Distance: {{ planet.distance }} million km</p>
+  
+  <div class="satellites-box">
+    <h3 class="satellites-count">Communication Satellites: {{ planet.satellites }}</h3>
+  </div>
+  
+  <div class="actions">
+    <button (click)="planet.satellites = planet.satellites + 1" class="btn btn-add">Deploy Satellite</button>
+    <button (click)="planet.satellites = planet.satellites - 1" class="btn btn-remove">Decommission Satellite</button>
+  </div>
+</div>
