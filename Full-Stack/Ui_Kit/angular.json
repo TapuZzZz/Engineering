@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "space-network": {
+    "Ui_Kit": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "space-network:build:production"
+              "buildTarget": "Ui_Kit:build:production"
             },
             "development": {
-              "buildTarget": "space-network:build:development"
+              "buildTarget": "Ui_Kit:build:development"
             }
           },
           "defaultConfiguration": "development"
