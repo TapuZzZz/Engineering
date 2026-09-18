@@ -1,16 +1,23 @@
+
+
 M = "attack at dawn"
 K = ""
-C = "e1c5f70a65ac519458e7e53f3609"
+C = 0xe1c5f70a65ac519458e7e53f3609
 
-for i in range(len(M)):
-    K += chr(ord(M[i]) ^ int(C[i*2:i*2+2], 16))
+M_bytes = M.encode('utf-8')
+M_int = int.from_bytes(M_bytes, byteorder='big')
+K_int = M_int ^ C
 
-print("Key: ", K)
+print("Key (hex):", hex(K_int))
+
+
 
 M2 = "attack at dusk"
 C2 = ""
 
-for i in range(len(M2)):
-    C2 += format(ord(M2[i]) ^ ord(K[i]), '02x')
+M2_bytes = M2.encode('utf-8')
+M2_int = int.from_bytes(M2_bytes, byteorder='big')
+C2_int = M2_int ^ K_int
+C2 = hex(C2_int)
 
 print("Ciphertext: ", C2)
