@@ -1,9 +1,27 @@
 :host {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-main {
-  flex: 1; /* דוחף את ה-Footer לתחתית בצורה טבעית */
+header, footer {
+  flex-shrink: 0;
+}
+
+.main-layout {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }

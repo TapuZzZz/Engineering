@@ -1,18 +1,16 @@
 header {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   text-align: center;
-  padding: 1rem;
-  
-  /* רקע סגול-אפרפר נוכח וברור */
-  background-color: #d1c8e8;
-  
-  /* הטקסט בצבע הסגול מהפלטה */
-  color: #5C47B8;
-  
-  /* מסגרת בולטת ומודגשת */
-  border: 2px solid #5C47B8;
-  border-radius: 8px;
-  
-  font-family: sans-serif;
+  padding: 1.25rem 1.5rem;
+  letter-spacing: 0.5px;
+
+  background-color: #ffffff;
+  color: #3d2f7a;
+
+  border-bottom: 4px solid #7c5cf0;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }

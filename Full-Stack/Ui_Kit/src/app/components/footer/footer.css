@@ -1,12 +1,10 @@
 footer {
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
-  padding: 1rem;
-  
-  background-color: #d1c8e8;
-  color: #5C47B8;
-  border-top: 2px solid #5C47B8;
-  border-radius: 8px 8px 0 0;
-  
-  font-family: sans-serif;
+  padding: 1rem 1.5rem;
+
+  background-color: #3d2f7a;
+  color: #e8e1fb;
+
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
