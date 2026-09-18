@@ -30,7 +30,7 @@ def caesar_decrypt_text(text, shift):
 
 BASE = 26
 BLOCK_SIZE = 4
-MODULO = BASE ** BLOCK_SIZE  # 456976
+MODULO = BASE ** BLOCK_SIZE
 
 
 def char_to_num(c):

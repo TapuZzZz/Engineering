@@ -1,5 +1,3 @@
-
-
 M = "attack at dawn"
 K = ""
 C = 0xe1c5f70a65ac519458e7e53f3609
@@ -10,7 +8,7 @@ K_int = M_int ^ C
 
 print("Key (hex):", hex(K_int))
 
-
+# ---------------------------------------------------
 
 M2 = "attack at dusk"
 C2 = ""
