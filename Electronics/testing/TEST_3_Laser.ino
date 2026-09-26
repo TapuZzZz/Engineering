@@ -29,13 +29,9 @@ void setup() {
   digitalWrite(LASER_PIN, LOW);
 
   Serial.println("=== TEST 3: LASER ONLY ===");
-  Serial.println("GPIO6 -> 220ohm -> 2N2222A base");
+  Serial.println("GPIO6 -> 1k -> 2N2222A base");
   Serial.println("");
-  Serial.println("SAFETY: point the laser at a safe surface (wall/floor),");
-  Serial.println("never at eyes, before it starts blinking.");
-  Serial.println("");
-  delay(2000);   // Time to physically aim it safely before it starts.
-
+  delay(2000);   
   Serial.println("Starting blink test...");
 }
 

@@ -33,10 +33,6 @@ public:
 
 TftWithOffset tft = TftWithOffset(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
-// Carried over from the previous board's calibration - RE-VERIFY
-// visually on this screen. If the border test below looks shifted
-// or clipped on one edge, adjust these two numbers up/down by 1-2
-// and re-flash until the border sits flush on all four sides.
 const int8_t TFT_COL_OFFSET = 2;
 const int8_t TFT_ROW_OFFSET = 1;
 
@@ -83,8 +79,6 @@ void setup() {
 
   tft.fillScreen(ST7735_BLACK);
 
-  // Border test - should sit flush against all 4 edges with no gap
-  // or clipping. If it doesn't, adjust TFT_COL_OFFSET/TFT_ROW_OFFSET.
   tft.drawRect(0, 0, tft.width(), tft.height(), ST7735_YELLOW);
 
   tft.setTextColor(ST7735_WHITE);
@@ -102,5 +96,5 @@ void setup() {
 }
 
 void loop() {
-  // Nothing to do - static test pattern stays on screen.
+
 }

@@ -8,9 +8,8 @@
 #define SERVO_PAN_PIN  4
 #define SERVO_TILT_PIN 5
 
-// Exact safe mechanical limits for your Tilt axis
 #define TILT_MIN_SAFE 45
-#define TILT_MAX_SAFE 150  // Limited to 150 to prevent over-rotation/stall
+#define TILT_MAX_SAFE 150  
 #define TILT_START    90
 
 #define PAN_MIN_SAFE  0
@@ -20,7 +19,6 @@
 Servo panServo;
 Servo tiltServo;
 
-// Standard pulse range
 const int MIN_PULSE = 500;
 const int MAX_PULSE = 2400;
 
@@ -42,7 +40,6 @@ void setup() {
   panServo.attach(SERVO_PAN_PIN, MIN_PULSE, MAX_PULSE);
   tiltServo.attach(SERVO_TILT_PIN, MIN_PULSE, MAX_PULSE);
 
-  // Set initial position: Pan=90, Tilt=90
   panServo.write(PAN_START);
   tiltServo.write(TILT_START);
   delay(1000);

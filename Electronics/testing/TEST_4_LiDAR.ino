@@ -19,7 +19,6 @@
 HardwareSerial lunaSerial(2);
 
 unsigned long lastReadingTime = 0;
-bool everGotAReading = false;
 
 void setup() {
   Serial.begin(115200);
@@ -27,8 +26,6 @@ void setup() {
 
   Serial.println("=== TEST 4: LIDAR (TF-LUNA) ONLY ===");
   Serial.println("RX = GPIO17, TX = GPIO18");
-  Serial.println("");
-  Serial.println("Move your hand toward/away from the sensor and watch the numbers.");
   Serial.println("");
 
   lunaSerial.begin(115200, SERIAL_8N1, LUNA_RX_PIN, LUNA_TX_PIN);
@@ -57,15 +54,10 @@ void loop() {
     }
 
     int distanceCm = frame[2] | (frame[3] << 8);
-    everGotAReading = true;
     lastReadingTime = millis();
 
     Serial.print("Distance: ");
     Serial.print(distanceCm);
     Serial.println(" cm");
-  }
-
-  if (!everGotAReading && millis() > 3000 && millis() % 1000 < 20) {
-    Serial.println("No readings yet - check RX/TX wiring and Luna power.");
   }
 }
