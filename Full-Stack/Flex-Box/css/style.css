@@ -1,0 +1,46 @@
+body {
+    background-color: #e7e2e2;
+}
+
+
+.header-main {
+    width: 100%;
+    height: 100px;
+    background-color: #333;
+
+    display: flex;
+    flex-direction: row;  /* default value */
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-content: normal;
+    align-items: center;
+}
+
+.header-main div {
+    height: 40px;
+}
+
+.header-main .div-1 {
+    background-color: #4399c1;
+
+    order: 1;
+    flex: 0 0 100px;
+
+}
+
+.header-main .div-2 {
+    background-color: #c1439b;
+
+    order: 2;
+    flex: 0 0 400px;
+
+    align-self: flex-end;
+}
+
+.header-main .div-3 {
+    background-color: #6fc143;
+
+    order: 3;
+    flex: 0 0 100px;
+
+}
