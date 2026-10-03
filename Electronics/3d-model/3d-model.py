@@ -12,10 +12,11 @@ FLOOR = 2.5
 STANDOFF_H = 5.0
 PCB_T = 1.6
 
-HF = 30.0                   # front height
-HB = 42.0                   # rear height
+RAISE = 10.0                # extra height for the whole box (base + lid move up together)
+HF = 30.0 + RAISE           # front height
+HB = 42.0 + RAISE           # rear height
 Y_S0, Y_S1 = 16.0, 54.0     # front slope limits (rear end moved 46->54 so the 35 mm TFT board fits)
-Z_SPLIT = 24.0
+Z_SPLIT = 24.0 + RAISE      # base gets the extra depth; lid keeps its size, so lid screw lengths stay the same
 TONGUE_H = 3.0
 
 # PCB mounting holes: read from Development_pcb.kicad_pcb (board 100x100, outline
@@ -51,15 +52,15 @@ SCREW_CB_DEPTH = 2.0            # head is 1.65 mm -> sits below the surface
 # active display is approximately 35.04 x 28.03 mm.
 TFT_BODY_W = 56.0
 TFT_BODY_H = 35.0
-TFT_WINDOW_W = 35.04 + 0.40
-TFT_WINDOW_H = 28.03 + 0.40
+TFT_WINDOW_W = 35.04 + 1.20   # active area + 0.6 mm per side (print tolerance + position error)
+TFT_WINDOW_H = 28.03 + 1.20
 TFT_HOLE_INNER_D = 2.0      # PCB hole (datasheet)
 TFT_HOLE_PAD_D = 4.5        # PCB pad / boss outer diameter (datasheet)
 TFT_PILOT_D = 1.7           # pilot hole for M2 self-tapping screw
 TFT_GLASS_H = 2.25          # glass stack height above the PCB front (3.45 - 1.20)
 TFT_BOSS_H = TFT_GLASS_H + 0.05   # PCB front rests on the boss tops, glass touches the wall
 TFT_PILOT_INTO_WALL = 1.0   # pilot depth beyond the boss, inside the wall (wall = 2.5)
-TFT_ACTIVE_OFFSET = 3.3     # active area is this far off the PCB centre, toward the pin edge (from drawing)
+TFT_ACTIVE_OFFSET = 2.5     # active area centre is 2.5 mm off the PCB centre toward the pin edge (re-measured: 8.0 mm from the pin edge, 13.0 mm from the other)
 TFT_PIN_SIDE = +1           # +1: pin edge on the right (seen from the front), -1: left
 TFT_HOLE_EDGE = 2.5
 
@@ -75,20 +76,20 @@ USB_SLOT_H = 2.40 + 0.40    # 2.80 (stadium shape, like the plug)
 USB_POCKET_W = 12.8         # spec max overmold ~12.35 mm (your photo looks ~10): tighten once measured
 USB_POCKET_H = 5.1 + 0.4    # 5.50
 USB_POCKET_R = 1.5
-USB_POCKET_DEPTH = 1.2      # wall is 2.5 -> 1.3 mm web carries the slot
+USB_POCKET_DEPTH = 1.7      # wall is 2.5 -> 0.8 mm web; lets the 6.65 mm plug tip reach the connector behind the wall
 
 # Right-wall keyed switch opening (x = OUT). Front is y=0.
 SWITCH_D = 12.2            # 12 mm switch + 0.2 print tolerance
 SWITCH_Y = 44.0
 SWITCH_Z = 14.0
 
-# Left-wall speaker: 30 mm round speaker, 5.5 mm thick. Centered on the wall.
-SPK_D = 30.0
-SPK_CLEAR = 0.3             # radial clearance around the speaker frame
-SPK_RING_H = 3.0            # retaining ring height (measured from the inner wall)
+# Left-wall speaker: datasheet says 30 mm x 5.5 mm, but the real one measures larger -> holder sized for 32 mm.
+SPK_D = 32.0                # measure your speaker with a caliper and set this
+SPK_CLEAR = 0.4             # radial clearance around the speaker frame
+SPK_RING_H = 4.0            # retaining ring height (measured from the inner wall)
 SPK_RING_T = 3.0            # retaining ring thickness
 SPK_Y = OUT / 2.0           # centered along the left wall
-SPK_Z = 22.0                # spans z=7..37, crossing the base/lid split
+SPK_Z = 22.0 + RAISE / 2.0   # keeps the speaker at the same relative spot on the taller wall
 SPK_GRILLE_D = 3.0
 SPK_GRILLE = ((0.0, 1), (5.5, 6), (10.0, 12))   # (ring radius, number of holes)
 
@@ -106,10 +107,10 @@ SERVO_W = 20.0
 SERVO_CLR = 0.25            # clearance per side
 SERVO_WALL = 2.5            # cradle wall thickness
 SERVO_WALL_H = 16.0         # cradle wall height (ears are ~24 mm above the servo bottom, so they stay free)
-SERVO_WIRE_W = 9.0          # wire notch in the rear cradle wall
-SERVO_WIRE_H = 5.0
-SERVO_HOLE_L, SERVO_HOLE_W = 20.0, 8.0   # roof slot for the wires, behind the cradle
-SERVO_HOLE_GAP = 7.0        # distance from cradle rear wall to the slot centre
+SERVO_WIRE_W = 12.0         # wire channel in the rear cradle wall (JST XH-3 housing is ~9.9 x 5.75 mm)
+SERVO_WIRE_H = SERVO_WALL_H + 1.0   # channel is open at the top: the cable just drops in
+SERVO_HOLE_L, SERVO_HOLE_W = 32.0, 12.0   # roof cable slot behind the cradle: 2 servos, ESP-CAM supply, laser, LiDAR
+SERVO_HOLE_GAP = 9.0        # distance from cradle rear wall to the slot centre
 SERVO_ALIGN_SHAFT = False   # False: cradle centred on the flat roof. True: output shaft centred.
 SERVO_SHAFT_FROM_WIRE_END = 26.0   # measured from the drawing (approx.)
 
@@ -271,9 +272,10 @@ ring = (cq.Workplane(spk_in).circle(r_in + SPK_RING_T).circle(r_in)
 base = base.union(ring.intersect(below))
 lid = lid.union(ring.intersect(above))
 
-# Wire notch at the bottom of the ring.
-notch = (cq.Workplane("XY").box(4.0, 8.0, 5.0, centered=False)
-         .translate((WALL, SPK_Y - 4.0, FLOOR + 0.1)))
+# Wire notch at the bottom of the ring (follows the speaker height).
+r_ring_out = r_in + SPK_RING_T
+notch = (cq.Workplane("XY").box(SPK_RING_H + 0.5, 8.0, SPK_RING_T + 4.0, centered=False)
+         .translate((WALL, SPK_Y - 4.0, SPK_Z - r_ring_out - 0.2)))
 base = base.cut(notch)
 
 # Grille: 1 + 6 + 12 holes through the wall.
@@ -377,13 +379,13 @@ slot = (cq.Workplane("XY").workplane(offset=HB - WALL - 1.0)
         .slot2D(SERVO_HOLE_L, SERVO_HOLE_W, 0).extrude(WALL + 2.0))
 lid = lid.cut(slot)
 
-# ---------------- Pry notches on the split line (front + rear, centre) ----------------
-# 0.7 mm deep (tongue/groove start at 1.0-1.25 mm) so a flat screwdriver can lift the lid.
-for ny0 in (-1.0, OUT - 0.7):
-    notch_p = (cq.Workplane("XY").box(16.0, 1.7, 3.0, centered=(True, False, True))
-               .translate((CX, ny0, Z_SPLIT)))
+# ---------------- Pry notches (front + rear centre) ----------------
+# Cut only into the BASE top edge (1.0 mm deep, 2.5 mm high): the lid has a thin 1.0 mm lip
+# over the tongue that must stay intact. A flat screwdriver goes in below the lid lip.
+for ny0 in (-1.0, OUT - 1.0):
+    notch_p = (cq.Workplane("XY").box(16.0, 2.0, 2.5, centered=(True, False, False))
+               .translate((CX, ny0, Z_SPLIT - 2.5)))
     base = base.cut(notch_p)
-    lid = lid.cut(notch_p)
 
 # ---------------- Export ----------------
 import os
