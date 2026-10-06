@@ -39,7 +39,7 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 1.1,
+          "drill": 1.2,
           "height": 2.01,
           "width": 2.01
         },
@@ -709,7 +709,7 @@
         "uuid": "d167984b-cd18-4689-afc8-1b7ac46834d7"
       }
     ],
-    "used_designators": "J1-8,R1-5,SW1,F1-2,U1-2,TP1,D1-3,C1-6,#PWR1-36,Q1,#FLG1-7",
+    "used_designators": "J1-8,R1-5,SW1,F1-2,U1-2,TP1,D1-3,C1-14,#PWR1-42,Q1,#FLG1-7",
     "variants": []
   },
   "sheets": [
