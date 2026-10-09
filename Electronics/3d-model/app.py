@@ -3,12 +3,12 @@
 """
 150 x 150 mm two-part enclosure (base + lid) for a 100 x 100 mm ESP32-S3 board.
 
-    python3 enclosure_v12.py --check     design-rule check only (NO CadQuery needed)
-    python3 enclosure_v12.py             check + build + export STEP / STL
+    python3 enclosure_v13.py --check     design-rule check only (NO CadQuery needed)
+    python3 enclosure_v13.py             check + build + export STEP / STL
 
 Contents
     - 100 x 100 mm custom PCB on 4 posts (3 real M3 holes + 1 dummy post)
-    - 1.8" 128x160 ST7735 TFT on the sloped front face
+    - 1.8" 128x160 ST7735 TFT on the sloped front face (frame pocket, 4 screws)
     - MG996R servo in a glued pocket on the flat roof (body on the roof, ears on the walls)
     - 30 mm speaker in the left wall
     - 12 mm key switch in the right wall  (mirror image of the speaker)
@@ -88,29 +88,53 @@ def _kicad_to_box(p):
 HOLES = [_kicad_to_box(p) for p in KICAD_HOLES]
 DUMMY = _kicad_to_box(KICAD_EMPTY_CORNER)
 
-# Everything on the main PCB, as axis-aligned keep-out boxes in BOX coordinates,
-# already grown by 3 mm around the pad extents to stand in for the component body.
+# Everything on the main PCB, as axis-aligned keep-out boxes in BOX coordinates:
+# pad extents + 3 mm (or the can diameter for electrolytics), read straight from
+# Development_pcb.kicad_pcb (all 31 parts).  Heights are typical body heights.
 # (ref, x0, y0, x1, y1, height above the top of the PCB)
 PCB_PARTS = [
-    ("J7",  115.64,  43.59, 121.64,  57.09, 11.5),   # JST-XH 4
-    ("J3",  115.64,  93.16, 121.64, 101.66, 11.5),   # JST-XH 2
-    ("J8",  109.30, 108.36, 117.84, 114.36, 11.0),   # screw terminal (power in)
-    ("D2",  100.41,  81.69, 116.57,  87.69,  3.2),
-    ("C9",  110.31,  93.14, 116.31, 101.64,  7.0),
-    ("J6",   91.56,  35.97, 115.06,  41.97, 11.5),   # JST-XH 8 -> TFT
-    ("C13", 106.51,  25.80, 112.51,  34.30,  7.0),
-    ("C3",  105.49,  71.84, 111.49,  81.34, 12.0),
-    ("C4",  105.49,  59.14, 111.49,  68.64, 12.0),
-    ("C10", 104.31,  93.16, 110.31, 101.66, 12.0),
-    ("F1",   96.50, 108.36, 107.60, 115.56, 10.0),
-    ("C14", 100.16,  25.79, 106.16,  34.29, 12.0),
-    ("J2",   94.06,  70.26, 100.06,  81.26, 11.5),
-    ("J1",   94.06,  57.56, 100.06,  68.56, 11.5),
-    ("C7",   94.06,  81.69, 100.06,  91.19, 12.0),
-    ("D1",   88.98, 108.36,  94.98, 124.52, 12.0),
-    ("C8",   87.71,  81.69,  93.71,  90.19,  7.0),
-    ("U1",   58.50,  30.89,  89.90,  90.23, 25.0),   # ESP32-S3-DevKitC-1 in its socket
-    ("C1",   82.00, 108.36,  88.00, 116.86,  7.0),
+    ("J7",  114.67,   42.74,  122.62,   57.94,  11.5),   # JST-XH
+    ("J3",  114.64,   92.31,  122.64,  102.51,  11.5),   # JST-XH
+    ("C9",  109.51,   92.34,  117.12,  102.44,   7.0),   # ceramic cap
+    ("J8",  108.30,  107.36,  118.84,  115.36,  11.0),   # screw terminal (power in)
+    ("C13",  105.71,   25.00,  113.31,   35.10,   7.0),   # ceramic cap
+    ("C3",  103.99,   68.50,  112.99,   79.60,  12.0),   # electrolytic D8.0mm
+    ("C4",  103.99,   55.80,  112.99,   66.90,  12.0),   # electrolytic D8.0mm
+    ("C10",  103.42,   92.36,  111.02,  102.46,  12.0),   # electrolytic D6.3mm
+    ("C14",   99.36,   24.99,  106.96,   35.09,  12.0),   # electrolytic D5.0mm
+    ("D2",   99.31,   80.59,  117.67,   88.79,   3.2),   # diode
+    ("F1",   95.50,  107.36,  108.60,  116.57,  10.0),   # polyfuse
+    ("J2",   93.09,   69.41,  101.03,   82.11,  11.5),   # JST-XH
+    ("J1",   93.09,   56.71,  101.03,   69.41,  11.5),   # JST-XH
+    ("C7",   92.56,   80.89,  101.56,   91.99,  12.0),   # electrolytic D8.0mm
+    ("J6",   90.71,   34.99,  115.91,   42.95,  11.5),   # JST-XH
+    ("D1",   87.78,  107.16,   96.18,  125.72,  12.0),   # diode
+    ("C8",   86.91,   80.89,   94.51,   90.99,   7.0),   # ceramic cap
+    ("C1",   81.19,  107.56,   88.80,  117.66,   7.0),   # ceramic cap
+    ("C2",   67.45,  107.11,   80.95,  120.61,  25.0),   # electrolytic D12.5mm
+    ("U1",   57.65,   30.04,   90.75,   91.08,  25.0),   # ESP32-S3-DevKitC-1 in its socket
+    ("R3",   50.08,   35.17,   60.22,   42.77,  11.0),   # resistor
+    ("R2",   50.00,   40.25,   60.14,   47.85,  11.0),   # resistor
+    ("C5",   47.58,   48.55,   55.18,   58.65,   7.0),   # ceramic cap
+    ("R1",   47.54,   78.35,   55.14,   96.11,   3.5),   # resistor
+    ("Q1",   45.95,   39.26,   53.45,   48.85,   8.0),   # TO-92
+    ("J4",   39.36,   38.92,   47.36,   49.12,  11.5),   # JST-XH
+    ("C6",   38.65,   48.57,   46.25,   58.67,  12.0),   # electrolytic D6.3mm
+    ("J5",   34.83,   83.23,   45.03,   91.23,  11.5),   # JST-XH
+    ("C12",   33.29,   38.97,   40.89,   49.07,   7.0),   # ceramic cap
+    ("U2",   29.46,   55.44,   55.19,   80.92,  12.0),   # MP3-TF-16P player
+    ("C11",   26.34,   38.97,   35.34,   50.07,  12.0),   # electrolytic D8.0mm
+]
+# radial electrolytics: (ref, centre x, centre y, diameter) - drawn as cylinders
+PCB_ROUND = [
+    ("C14",  103.16,   30.04,   5.0),
+    ("C3",  108.49,   74.05,   8.0),
+    ("C2",   74.20,  113.86,  12.5),
+    ("C6",   42.45,   53.62,   6.3),
+    ("C11",   30.84,   44.52,   8.0),
+    ("C4",  108.49,   61.35,   8.0),
+    ("C10",  107.22,   97.41,   6.3),
+    ("C7",   97.06,   86.44,   8.0),
 ]
 
 # ---- enclosure screws (4 corners, independent of the PCB) -----------------
@@ -132,51 +156,71 @@ SCREW_COUNTERBORE_R = 3.3
 SCREW_CB_DEPTH = 2.0
 
 # ---- 1.8" 128x160 ST7735 TFT ---------------------------------------------
-# Caliper (yours) + the supplier mechanical drawing.  These modules differ
-# between suppliers, so these are YOUR module's numbers, not a generic datasheet.
-# Vendor PCB drawing of YOUR module (1.8'128X160 RGB_TFT, 8-pin GND VDD SCL SDA RST DC CS BLK):
-#   PCB 55.00 x 34.70, hole centres 50.93 x 31.00, header on a short edge, in line with the holes.
-TFT_BODY_W = 55.00          # PCB long side   (drawing 55.00, your caliper 55.62)
-TFT_BODY_H = 34.70          # PCB short side  (drawing 34.70, your caliper 34.83)
-TFT_HOLE_SP_L = 50.93       # hole centre to centre, long side   (drawing)
-TFT_HOLE_SP_S = 31.00       # hole centre to centre, short side  (drawing)
-TFT_HOLES_OUTER_L = 53.6    # your caliper, outer edge to outer edge - cross-check only
-TFT_HOLES_OUTER_S = 32.5
-TFT_HOLE_INNER_D = 2.5      # hole in the module PCB (M2 screw)
-# Short side: the drawing says 31.00, your caliper (32.5 outer - 2.5 hole) says 30.0.
-# The pilots are placed at the midpoint.  An M2 screw in the 2.5 mm module hole has
-# 0.25 mm of play per side, so it passes whichever number is right, and a self-tapping
-# screw bites the plastic fine 0.25 mm off the pilot centre.
-TFT_HOLE_SP_S_CAL = TFT_HOLES_OUTER_S - TFT_HOLE_INNER_D           # 30.0
-TFT_HOLE_SP_S_USED = (TFT_HOLE_SP_S + TFT_HOLE_SP_S_CAL) / 2.0      # 30.5
-TFT_PIN_ROW = (TFT_BODY_W - TFT_HOLE_SP_L) / 2.0   # header row sits in line with the holes
-TFT_HOLE_PAD_D = 5.2        # boss outer diameter (1.8 mm ring around the pilot)
+# YOUR module (photos): 8-pin GND VCC SCL SDA RST DC CS BLK on a short edge, an 8-pin
+# connector on the BACK at that edge with the wires leaving straight back, and the LCD
+# in a WHITE PLASTIC FRAME on the front.  The frame has two square tabs at the corners
+# away from the pins, right over the two PCB holes there - so screw bosses cannot be
+# used at that end.
+#
+# Mounting (v13): the white frame drops into a pocket in the inside face of the slope,
+# sized to the frame, so the frame itself locates the screen.  Its front face rests on
+# the bottom of the pocket; a window through the wall shows the lit area.  4 screws,
+# no glue: M2 self-tapping screws through the module's own 4 holes into 4 bosses.
+# The module lies on its side: long edge across the box, pins on the right as seen
+# from the front.
+TFT_BODY_W = 55.62          # PCB long side   (your caliper; drawing 55.00)
+TFT_BODY_H = 34.83          # PCB short side  (your caliper; drawing 34.70)
+# PCB holes: the drawing says 2.0 mm holes; your caliper outer-edge-to-outer-edge
+# readings 53.6 / 32.5 then give 51.6 / 30.5 centre to centre (~2.0 mm from the edges,
+# which matches your photo).
+TFT_HOLE_INNER_D = 2.0
+TFT_HOLE_SP_L = 53.6 - TFT_HOLE_INNER_D      # 51.6
+TFT_HOLE_SP_S = 32.5 - TFT_HOLE_INNER_D      # 30.5
+# Screws: 4 x M2 self-tapping through the module's own 4 holes into 4 bosses.
+#  - pin end: 3.1 mm from the hole centre to the white frame -> 5.0 mm bosses.
+#  - far end: you measured 4.62 mm from the end of the white frame (tabs included) to
+#    the PCB edge, i.e. 2.6 mm from the hole centre -> 4.4 mm bosses.
+TFT_BOSS_D = 5.0            # pin-end bosses (1.65 mm wall round the pilot)
+TFT_BOSS_FAR_D = 4.4        # far-end bosses (1.35 mm wall round the pilot)
+TFT_PILOT_D = 1.7 if PROCESS == "SLA" else 1.6   # M2 self-tapping pilot
+TFT_PILOT_SKIN = 1.6        # plastic left between the pilot bottom and the outside (>= 1.2,
+                            # with margin so the JLC thin-wall heatmap stays grey)
+TFT_BOSS_PRESS = 0.15       # boss is this much short of the PCB, so the screws pull the
+                            # frame face firmly onto the pocket floor
+TFT_PCB_T = 1.6             # module PCB thickness (only used for the preview model)
+
+# White frame (LCD outline) from the supplier drawing of this module:
+#   PCB 56.00 x 35.00, LCD outline 45.83 x 33.00, 2.25 high above a 1.20 PCB,
+#   starting 5.09 from the pin edge, centred across the PCB (1.0 each side).
+TFT_FRAME_END_TO_EDGE = 4.62   # YOUR caliper: end of the white frame (tabs) -> far PCB edge
+TFT_FRAME_S = 33.00         # white frame, short side
+TFT_FRAME_T = 2.25          # white frame height above the front of the PCB
+TFT_FRAME_FROM_PIN = 5.09   # pin edge of the PCB -> start of the white frame
+TFT_FRAME_L = TFT_BODY_W - TFT_FRAME_FROM_PIN - TFT_FRAME_END_TO_EDGE   # 45.91 (drawing 45.83)
+TFT_PIN_TAIL_H = 1.8        # solder joints sticking out of the PCB front (estimate)
+TFT_FRAME_MEASURED = True   # supplier drawing
+TFT_FRAME_CLR = 0.30        # per side around the frame (SLA +-0.2, FDM holes -0.4 -> tight)
+
 TFT_ACTIVE_W = 35.04        # active (lit) area
 TFT_ACTIVE_H = 28.03
-TFT_GLASS_W = 45.83         # glass footprint, long side   (supplier drawing)
-TFT_GLASS_H = 33.00         # glass footprint, short side
-TFT_GLASS_T = 2.25          # glass stack height above the front of the module PCB
-TFT_GLASS_CLR = 0.45        # clearance kept around the glass (also sets the boss flats).
-                            # The pilot centre is only 2.55 mm from the glass edge, so this
-                            # is the trade-off: 0.45 leaves 1.30 mm of boss wall (JLC flags
-                            # < 1.2). If the glass rubs a boss flat, shave the flat with a knife.
-TFT_LIT_UNCERT = 8.0 + TFT_ACTIVE_W + 13.0 - TFT_BODY_W   # 1.04: the 8 / 13 mm edge numbers
-                                                         # overshoot the 55 mm PCB by this much
-TFT_WINDOW_W = TFT_ACTIVE_W + 2.00 + TFT_LIT_UNCERT   # 1.0 mm margin per side + the uncertainty
+# The lit area starts 8.0 mm from the pin edge (supplier) and ends 13.0 mm from the
+# other edge: on the 55.62 PCB those disagree by 0.42 mm.  The window is centred on
+# the midpoint and made 0.42 mm wider, so it shows the whole lit area either way.
+TFT_LIT_FROM_PIN = (8.0 + (TFT_BODY_W - 13.0 - TFT_ACTIVE_W)) / 2.0    # 7.79
+TFT_LIT_UNCERT = abs(8.0 + TFT_ACTIVE_W + 13.0 - TFT_BODY_W)           # 0.42
+TFT_WINDOW_W = TFT_ACTIVE_W + 2.00 + TFT_LIT_UNCERT   # 1.0 mm margin per side
 TFT_WINDOW_H = TFT_ACTIVE_H + 2.00
-TFT_PILOT_D = 1.7 if PROCESS == "SLA" else 1.6   # M2 self-tap pilot: resin is stiffer
-                                                # than PLA, so 0.1 mm more to avoid cracking
-TFT_BOSS_H = TFT_GLASS_T + 0.25      # 0.25 mm so a tall print can never crush the glass
-TFT_PILOT_INTO_WALL = 1.0   # pilot continues this far into the wall (wall stays closed)
-# The lit area is 8.0 mm from the pin edge and 13.0 mm from the other edge, so it is
-# not centred on the module PCB.  8 + 35.04 + 13 = 56.04, i.e. 1.04 mm more than the
-# 55.00 PCB, so its exact position is uncertain by ~1 mm.  The lit area is placed at
-# the midpoint of the two readings ((13 - 8) / 2 = 2.5 mm off centre) and the window
-# is made 1.04 mm wider, so it shows the whole lit area whichever reading is right.
-TFT_ACTIVE_OFFSET = (13.0 - 8.0) / 2.0      # 2.50
-TFT_PIN_SIDE = +1           # +1 pin header on the right seen from the front, -1 left
-TFT_BEZEL = 2.0             # cosmetic recess around the window
-TFT_BEZEL_DEPTH = 1.0       # >= MIN_DETAIL
+TFT_ACTIVE_OFFSET = TFT_BODY_W / 2.0 - TFT_LIT_FROM_PIN - TFT_ACTIVE_W / 2.0  # lit centre
+                                                                            # -> pin side
+TFT_PIN_SIDE = +1           # +1 pins on the right seen from the front, -1 left
+TFT_POCKET_D = 1.0          # frame pocket depth into the 3 mm wall (2 mm stays)
+TFT_PIN_ROW_FROM_EDGE = 2.0 # pin centres from the PCB pin edge (drawing: ~1.5..2.5)
+TFT_LOCATE_RIB = 1.6        # wall kept between the pin relief and the frame pocket, so the
+                            # pocket still locates the frame on the pin side (>= 1.2 for JLC)
+TFT_PIN_RELIEF_TO = TFT_FRAME_FROM_PIN - TFT_FRAME_CLR - TFT_LOCATE_RIB  # pin edge -> in
+TFT_PIN_RELIEF_S = 22.0     # ... and 22 mm along the pin row (8 pins x 2.54 + pads)
+TFT_BEZEL = 2.0             # cosmetic recess around the window, outside
+TFT_BEZEL_DEPTH = 0.5       # >= MIN_DETAIL; wall left between bezel and pocket is checked
 
 # ---- rear wall USB-C ------------------------------------------------------
 USB_X = 75.0
@@ -293,12 +337,27 @@ NX, NZ = -UZ, UX
 ANG = math.degrees(math.atan2(HB - HF, Y_S1 - Y_S0))
 
 # ---- derived TFT geometry (local slope coords, x across, y up the slope) --
-TFT_PCB_DX = -TFT_PIN_SIDE * TFT_ACTIVE_OFFSET        # module centre, window centred on the lit area
-TFT_HOLE_X = (-TFT_HOLE_SP_L / 2.0 + TFT_PCB_DX, TFT_HOLE_SP_L / 2.0 + TFT_PCB_DX)
-TFT_HOLE_Y = (-TFT_HOLE_SP_S_USED / 2.0, TFT_HOLE_SP_S_USED / 2.0)
-TFT_PTS = [(hx, hy) for hx in TFT_HOLE_X for hy in TFT_HOLE_Y]
-TFT_KO_W = TFT_GLASS_W + 2 * TFT_GLASS_CLR            # glass keep-out, also cuts the boss flats
-TFT_KO_H = TFT_GLASS_H + 2 * TFT_GLASS_CLR
+# x = 0 is the centre of the window = centre of the lit area
+TFT_BEZEL_DEPTH = max(TFT_BEZEL_DEPTH, MIN_DETAIL)
+TFT_PCB_DX = -TFT_PIN_SIDE * TFT_ACTIVE_OFFSET        # module PCB centre
+TFT_PIN_EDGE_X = TFT_PCB_DX + TFT_PIN_SIDE * TFT_BODY_W / 2.0
+TFT_FRAME_CX = TFT_PIN_EDGE_X - TFT_PIN_SIDE * (TFT_FRAME_FROM_PIN + TFT_FRAME_L / 2.0)
+TFT_POCKET_W = TFT_FRAME_L + 2 * TFT_FRAME_CLR
+TFT_POCKET_H = TFT_FRAME_S + 2 * TFT_FRAME_CLR
+TFT_RELIEF_CX = TFT_PIN_EDGE_X - TFT_PIN_SIDE * (TFT_PIN_RELIEF_TO - 0.5) / 2.0
+TFT_RELIEF_W = TFT_PIN_RELIEF_TO + 0.5                # starts 0.5 mm past the PCB edge
+TFT_PCB_FRONT_D = WALL - TFT_POCKET_D + TFT_FRAME_T   # outside surface -> PCB front
+TFT_PCB_BACK_D = TFT_PCB_FRONT_D + TFT_PCB_T
+TFT_TAIL_GAP = TFT_PCB_FRONT_D - TFT_PIN_TAIL_H - WALL   # solder joints -> inner wall face
+TFT_RELIEF_D = max(0.0, 0.5 - TFT_TAIL_GAP)           # keep >= 0.5 mm in front of the joints
+TFT_BOSS_H = TFT_PCB_FRONT_D - WALL - TFT_BOSS_PRESS  # inner wall face -> top of the boss
+TFT_SCREW_X = TFT_PIN_EDGE_X - TFT_PIN_SIDE * (TFT_BODY_W - TFT_HOLE_SP_L) / 2.0
+TFT_PTS = [(TFT_SCREW_X, -TFT_HOLE_SP_S / 2.0), (TFT_SCREW_X, TFT_HOLE_SP_S / 2.0)]
+TFT_PILOT_DEPTH = TFT_BOSS_H + WALL - TFT_PILOT_SKIN  # boss + into the wall
+TFT_FAR_EDGE_X = TFT_PIN_EDGE_X - TFT_PIN_SIDE * TFT_BODY_W
+TFT_SCREW_FAR_X = TFT_FAR_EDGE_X + TFT_PIN_SIDE * (TFT_BODY_W - TFT_HOLE_SP_L) / 2.0
+TFT_PTS_FAR = [(TFT_SCREW_FAR_X, -TFT_HOLE_SP_S / 2.0), (TFT_SCREW_FAR_X, TFT_HOLE_SP_S / 2.0)]
+TFT_PTS_ALL = TFT_PTS + TFT_PTS_FAR
 
 # ---------------- Helpers ----------------
 # (make_drawings.py reads everything above this line)
@@ -515,70 +574,112 @@ def check(verbose=True):
         E("TFT module is %.1f mm across the slope; the slope is only %.1f mm"
           % (TFT_BODY_H, SLOPE_LEN))
     N("TFT module leaves %.1f mm at each end of the slope" % (half - TFT_BODY_H / 2.0))
-    # window must stay inside the glass
-    g0, g1 = TFT_PCB_DX - TFT_GLASS_W / 2, TFT_PCB_DX + TFT_GLASS_W / 2
-    if -TFT_WINDOW_W / 2 < g0 or TFT_WINDOW_W / 2 > g1:
-        E("window is wider than the glass")
-    if TFT_WINDOW_H / 2 > TFT_GLASS_H / 2:
-        E("window is taller than the glass")
-    N("window margin on the glass: %.2f / %.2f mm long side, %.2f mm short side"
-      % (-TFT_WINDOW_W / 2 - g0, g1 - TFT_WINDOW_W / 2,
-         (TFT_GLASS_H - TFT_WINDOW_H) / 2))
-    # window must stay inside the lit area + margin, and the lit area inside the window
-    if TFT_WINDOW_W < TFT_ACTIVE_W or TFT_WINDOW_H < TFT_ACTIVE_H:
+    if not TFT_FRAME_MEASURED:
+        W("TFT white frame %.2f x %.2f x %.2f, %.1f mm from the pin edge, solder joints %.1f "
+          "mm: ESTIMATED from photos - measure them and set TFT_FRAME_MEASURED = True"
+          % (TFT_FRAME_L, TFT_FRAME_S, TFT_FRAME_T, TFT_FRAME_FROM_PIN, TFT_PIN_TAIL_H))
+    if TFT_FRAME_S > TFT_BODY_H + 1.0:
+        W("white frame (%.2f) is more than 1 mm wider than the PCB (%.2f) - re-measure"
+          % (TFT_FRAME_S, TFT_BODY_H))
+    if TFT_FRAME_L < 45.0 or TFT_FRAME_L > 46.5:
+        W("white frame length works out to %.2f (drawing 45.83) - re-measure" % TFT_FRAME_L)
+    # pocket must fit on the slope and keep wall behind it
+    if TFT_POCKET_H / 2.0 > half - 1.5:
+        E("frame pocket %.1f mm is too long for the %.1f mm slope" % (TFT_POCKET_H, SLOPE_LEN))
+    if TFT_FRAME_CLR < HOLE_TOL / 2.0:
+        W("frame pocket clearance %.2f per side < %s tolerance %.2f - the frame may not drop in"
+          % (TFT_FRAME_CLR, PROCESS, HOLE_TOL / 2.0))
+    TFT_MIN_T = JLC_THIN + 0.3          # keep 0.3 mm above JLC's limit around the screen
+    if TFT_LOCATE_RIB < TFT_MIN_T and TFT_RELIEF_D > 0:
+        E("TFT locating rib %.2f mm < %.1f" % (TFT_LOCATE_RIB, TFT_MIN_T))
+    if TFT_PILOT_SKIN < TFT_MIN_T:
+        E("TFT pilot skin %.2f mm < %.1f" % (TFT_PILOT_SKIN, TFT_MIN_T))
+    left = WALL - TFT_POCKET_D - TFT_BEZEL_DEPTH
+    if left < max(MIN_WALL, JLC_THIN):
+        E("only %.2f mm of wall between the outside bezel and the frame pocket" % left)
+    if TFT_RELIEF_D > 0 and TFT_PIN_RELIEF_TO < TFT_PIN_ROW_FROM_EDGE + 1.1:
+        E("pin relief ends %.2f mm from the PCB edge but the solder joints reach %.2f mm"
+          % (TFT_PIN_RELIEF_TO, TFT_PIN_ROW_FROM_EDGE + 1.1))
+    left2 = WALL - TFT_RELIEF_D - TFT_BEZEL_DEPTH
+    if TFT_RELIEF_D > 0 and left2 < max(MIN_WALL, JLC_THIN):
+        E("only %.2f mm of wall behind the pin relief" % left2)
+    N("TFT frame pocket %.2f x %.2f, %.1f deep (%.2f mm per side); wall left %.2f mm under "
+      "the frame, %.2f mm under the bezel ring" % (TFT_POCKET_W, TFT_POCKET_H, TFT_POCKET_D,
+                                                   TFT_FRAME_CLR, WALL - TFT_POCKET_D, left))
+    # window: inside the frame, lit area inside the window
+    f0 = TFT_FRAME_CX - TFT_FRAME_L / 2.0
+    f1 = TFT_FRAME_CX + TFT_FRAME_L / 2.0
+    if -TFT_WINDOW_W / 2 < f0 or TFT_WINDOW_W / 2 > f1 or TFT_WINDOW_H > TFT_FRAME_S:
+        E("the window is larger than the white frame - the PCB would show through")
+    if TFT_WINDOW_W < TFT_ACTIVE_W + TFT_LIT_UNCERT or TFT_WINDOW_H < TFT_ACTIVE_H:
         E("window is smaller than the lit area")
-    # bosses: cut back by the glass keep-out, so check what is left
-    ko0, ko1 = TFT_PCB_DX - TFT_KO_W / 2, TFT_PCB_DX + TFT_KO_W / 2
-    for hx in TFT_HOLE_X:
-        b0, b1 = hx - TFT_HOLE_PAD_D / 2, hx + TFT_HOLE_PAD_D / 2
-        if hx < TFT_PCB_DX:                      # relief cuts this boss on its right
-            left, thin = ko0 - b0, ko0 - (hx + TFT_PILOT_D / 2)
-        else:                                    # ... and this one on its left
-            left, thin = b1 - ko1, (hx - TFT_PILOT_D / 2) - ko1
-        if thin < max(MIN_DETAIL, JLC_THIN):
-            E("TFT boss at x=%+.2f leaves only %.2f mm of wall beside the pilot "
-              "(needs >= %.1f)" % (hx, thin, max(MIN_DETAIL, JLC_THIN)))
-        N("TFT boss at x=%+.2f: %.2f mm wide after the glass relief, %.2f mm of wall "
-          "on the glass side" % (hx, left, thin))
-    # the module must not be wider than the slope face
+    N("TFT window %.2f x %.2f over the lit area; it ends %.2f / %.2f mm inside the frame "
+      "ends and %.2f mm inside its sides" % (TFT_WINDOW_W, TFT_WINDOW_H,
+                                             -TFT_WINDOW_W / 2 - f0, f1 - TFT_WINDOW_W / 2,
+                                             (TFT_FRAME_S - TFT_WINDOW_H) / 2))
+    # solder joints on the PCB front vs the inside of the wall
+    N("TFT: PCB front sits %.2f mm behind the inner wall face; solder joints %.1f mm -> "
+      "%s" % (TFT_PCB_FRONT_D - WALL, TFT_PIN_TAIL_H,
+              "%.2f mm clear, no relief needed" % TFT_TAIL_GAP if TFT_RELIEF_D == 0 else
+              "%.2f mm relief pocket over the pin row" % TFT_RELIEF_D))
     if TFT_BODY_W / 2 + abs(TFT_PCB_DX) > (OUT - 2 * WALL) / 2:
         E("TFT module is wider than the inside of the box")
-    # holes must land on the module, not off its edge
-    m_edge = TFT_BODY_W / 2 - TFT_HOLE_SP_L / 2
-    if m_edge < TFT_HOLE_INNER_D / 2 + 0.5:
-        E("TFT screw holes sit only %.2f mm from the module edge" % m_edge)
-    N("TFT screw holes sit %.2f mm (long) / %.2f mm (short) from the module edge"
-      % (m_edge, TFT_BODY_H / 2 - TFT_HOLE_SP_S / 2))
-    play = (TFT_HOLE_INNER_D - 2.0) / 2.0          # M2 screw in the module hole
-    miss = abs(TFT_HOLE_SP_S_USED - TFT_HOLE_SP_S) / 2.0
-    miss = max(miss, abs(TFT_HOLE_SP_S_USED - TFT_HOLE_SP_S_CAL) / 2.0)
-    if miss > play + 1e-9:
-        E("TFT short-side pilots are %.2f mm off one of the two readings; an M2 screw only "
-          "has %.2f mm of play" % (miss, play))
-    N("TFT short-side pilots at %.2f mm pitch (drawing %.2f, caliper %.2f): each screw is "
-      "at most %.2f mm off, inside the %.2f mm play of an M2 in a %.1f mm hole"
-      % (TFT_HOLE_SP_S_USED, TFT_HOLE_SP_S, TFT_HOLE_SP_S_CAL, miss, play, TFT_HOLE_INNER_D))
-    for side, outer, sp in (("long", TFT_HOLES_OUTER_L, TFT_HOLE_SP_L),):
-        if abs((outer - sp) - TFT_HOLE_INNER_D) > 0.4:
-            W("TFT %s side: caliper %.1f outer-to-outer vs drawing pitch %.2f implies a "
-              "%.2f mm hole (expected ~%.1f) - check with the printed template"
-              % (side, outer, sp, outer - sp, TFT_HOLE_INNER_D))
+    # screw bosses at the pin end
+    br = TFT_BOSS_D / 2.0
+    pocket_edge = TFT_PIN_EDGE_X - TFT_PIN_SIDE * (TFT_FRAME_FROM_PIN - TFT_FRAME_CLR)
+    to_pocket = abs(pocket_edge - TFT_SCREW_X) - br
+    if to_pocket < 0.2:
+        E("TFT screw boss runs into the frame pocket (%.2f mm)" % to_pocket)
+    to_relief = TFT_HOLE_SP_S / 2.0 - br - TFT_PIN_RELIEF_S / 2.0
+    if TFT_RELIEF_D > 0 and to_relief < 0.5:
+        E("TFT screw boss runs into the pin relief (%.2f mm)" % to_relief)
+    if TFT_HOLE_SP_S / 2.0 + br > half - 1.5:
+        E("TFT screw boss runs off the end of the slope")
+    if (TFT_BOSS_D - TFT_PILOT_D) / 2.0 < max(MIN_WALL, JLC_THIN):
+        E("TFT boss wall round the pilot is only %.2f mm" % ((TFT_BOSS_D - TFT_PILOT_D) / 2.0))
+    if TFT_PILOT_SKIN < JLC_THIN:
+        E("only %.2f mm of plastic outside the TFT screw pilots" % TFT_PILOT_SKIN)
+    if abs(TFT_SCREW_X) - TFT_PILOT_D / 2.0 < TFT_WINDOW_W / 2.0 + TFT_BEZEL + 0.3:
+        E("TFT screw pilot is under the outside bezel - too little plastic left")
+    thread = TFT_PILOT_DEPTH
+    N("TFT screws (pin end): 2 x M2 self-tapping, %.1f mm pitch, %.2f mm from the pin "
+      "edge; boss %.1f dia x %.2f high (%.2f mm from the frame pocket), pilot %.1f x %.2f deep"
+      " -> M2 x 4 (PCB 1.2-1.6 + %.1f mm of thread available)"
+      % (TFT_HOLE_SP_S, (TFT_BODY_W - TFT_HOLE_SP_L) / 2.0, TFT_BOSS_D, TFT_BOSS_H, to_pocket,
+         TFT_PILOT_D, TFT_PILOT_DEPTH, thread))
+    if TFT_FRAME_CLR < 0.25:
+        W("the 4 screws need the module to shift up to ~0.25 mm in the pocket to line up")
+    # far-end bosses: must stay clear of the frame pocket (the white tabs are in it)
+    brf = TFT_BOSS_FAR_D / 2.0
+    pocket_far = TFT_FAR_EDGE_X + TFT_PIN_SIDE * (TFT_FRAME_END_TO_EDGE - TFT_FRAME_CLR)
+    to_pocket_f = abs(pocket_far - TFT_SCREW_FAR_X) - brf
+    if to_pocket_f < 0.05:
+        E("TFT far-end boss runs into the frame pocket (%.2f mm)" % to_pocket_f)
+    if (TFT_BOSS_FAR_D - TFT_PILOT_D) / 2.0 < max(MIN_WALL, JLC_THIN):
+        E("TFT far boss wall round the pilot is only %.2f mm"
+          % ((TFT_BOSS_FAR_D - TFT_PILOT_D) / 2.0))
+    if abs(TFT_SCREW_FAR_X) - TFT_PILOT_D / 2.0 < TFT_WINDOW_W / 2.0 + TFT_BEZEL + 0.3:
+        E("TFT far screw pilot is under the outside bezel")
+    N("TFT screws (far end): 2 x M2 x 4 self-tapping, boss %.1f dia x %.2f high, %.2f mm "
+      "from the frame pocket (white frame ends %.2f mm from the PCB edge, hole centre %.2f)"
+      % (TFT_BOSS_FAR_D, TFT_BOSS_H, to_pocket_f, TFT_FRAME_END_TO_EDGE,
+         (TFT_BODY_W - TFT_HOLE_SP_L) / 2.0))
 
     # ---- 3.4b TFT module back + header wires vs parts on the main PCB -----
     # module PCB back face sits WALL + boss + PCB thickness behind the outer slope;
-    # allow 3 mm of parts on its back and 20 mm of header pins + straight Dupont
-    # housings behind the header row (on the pin side, 2.54 mm wide).
+    # allow 3 mm of parts on its back, and 12 mm behind the pin edge (7 mm wide) for
+    # the back connector (~9 mm, from your side photo) + the start of the wire bend.
     z_pcb_ = FLOOR + STANDOFF_H + PCB_T
-    back_d = WALL + TFT_BOSS_H + 1.6 + 3.0
-    hdr_d = WALL + TFT_BOSS_H + 1.6 + 20.0
+    back_d = TFT_PCB_BACK_D + 3.0
+    hdr_d = TFT_PCB_BACK_D + 12.0
     mx0 = CX + TFT_PCB_DX - TFT_BODY_W / 2.0
     mx1 = CX + TFT_PCB_DX + TFT_BODY_W / 2.0
-    hx_ = CX + TFT_PCB_DX + TFT_PIN_SIDE * (TFT_BODY_W / 2.0 - TFT_PIN_ROW)
+    hx_ = CX + TFT_PIN_EDGE_X - TFT_PIN_SIDE * 3.5      # connector on the back, at the pins
     worst = []
     for ref, x0, y0, x1, y1, h in PCB_PARTS:
         top = z_pcb_ + h
         for nm_, d_, xa, xb in (("module back", back_d, mx0, mx1),
-                                ("header wires", hdr_d, hx_ - 1.5, hx_ + 1.5)):   # 2.54 mm housing
+                                ("connector + wires", hdr_d, hx_ - 3.5, hx_ + 3.5)):
             if _ov(x0, x1, xa, xb) <= 0:
                 continue
             for k in range(41):                       # sample along the slope
@@ -591,7 +692,8 @@ def check(verbose=True):
         g_, r_, n_ = min(worst)
         if g_ < 2.0:
             E("TFT %s comes within %.1f mm of %s on the PCB" % (n_, g_, r_))
-        N("TFT module: the closest PCB part is %s, %.1f mm below the %s" % (r_, g_, n_))
+        N("TFT module: the closest PCB part is %s, %.1f mm below the %s; bend the wires "
+          "toward the middle of the box right after the connector" % (r_, g_, n_))
 
     # ---- 3.5 roof: cradle vs vents vs cable slot vs lid screw posts ------
     roof = [("servo mount", SERVO_CX - SRV_SIDE_X / 2, SRV_OUT_Y0,
@@ -690,10 +792,8 @@ def check(verbose=True):
         if ENC_SCREW_MODE == "insert":
             E("heat-set inserts do not work in SLA resin - set ENC_SCREW_MODE = 'selftap'")
     if PROCESS == "FDM":
-        N("FDM only: the lid's 4 TFT bosses (%.1f mm) hang from the sloped face and "
-          "the top of the speaker bore is an arch - both need support. JLC adds it "
-          "automatically and it is all on inside faces. MJF needs no support at all."
-          % TFT_BOSS_H)
+        N("FDM only: the top of the speaker bore is an arch and needs support. JLC adds "
+          "it automatically and it is on an inside face. MJF needs no support at all.")
         N("FDM only: print the base open-side-up and the lid open-side-down "
           "(the file already has the lid lying flat).")
 
@@ -929,17 +1029,21 @@ def build():
         return cq.Plane(origin=(CX, cy - NX * depth, cz - NZ * depth),
                         xDir=(1, 0, 0), normal=(0, -NX, -NZ))
 
-    lid = lid.union(cq.Workplane(slope_plane(WALL - 0.3)).pushPoints(TFT_PTS)
-                    .circle(TFT_HOLE_PAD_D / 2.0).extrude(TFT_BOSS_H + 0.3))
-    # glass relief: guarantees TFT_GLASS_CLR around the glass and flattens the bosses
-    lid = lid.cut(cq.Workplane(slope_plane(WALL - 0.05)).center(TFT_PCB_DX, 0)
-                  .rect(TFT_KO_W, TFT_KO_H).extrude(TFT_BOSS_H + 1.05))
-    # blind pilots for the M2 screws
+    # 4 screw bosses (5.0 at the pin end, 4.4 at the far end) + their M2 pilots
+    for pts_, d_ in ((TFT_PTS, TFT_BOSS_D), (TFT_PTS_FAR, TFT_BOSS_FAR_D)):
+        lid = lid.union(cq.Workplane(slope_plane(WALL - 0.3)).pushPoints(pts_)
+                        .circle(d_ / 2.0).extrude(TFT_BOSS_H + 0.3))
     lid = lid.cut(cq.Workplane(cq.Plane(origin=(CX, cy - NX * (WALL + TFT_BOSS_H),
                                                 cz - NZ * (WALL + TFT_BOSS_H)),
                                         xDir=(1, 0, 0), normal=(0, NX, NZ)))
-                  .pushPoints(TFT_PTS).circle(TFT_PILOT_D / 2.0)
-                  .extrude(TFT_BOSS_H + TFT_PILOT_INTO_WALL))
+                  .pushPoints(TFT_PTS_ALL).circle(TFT_PILOT_D / 2.0).extrude(TFT_PILOT_DEPTH))
+    # pocket for the white frame, cut AFTER the bosses so nothing can ever stand in it
+    lid = lid.cut(cq.Workplane(slope_plane(WALL - TFT_POCKET_D)).center(TFT_FRAME_CX, 0)
+                  .rect(TFT_POCKET_W, TFT_POCKET_H).extrude(TFT_POCKET_D + TFT_FRAME_T + 0.5))
+    # shallow relief over the solder joints of the pin row (only if they need it)
+    if TFT_RELIEF_D > 0:
+        lid = lid.cut(cq.Workplane(slope_plane(WALL - TFT_RELIEF_D)).center(TFT_RELIEF_CX, 0)
+                      .rect(TFT_RELIEF_W, TFT_PIN_RELIEF_S).extrude(TFT_RELIEF_D + 0.3))
 
     checkpoint("TFT")
 
@@ -1004,31 +1108,244 @@ def build():
     return base, lid
 
 
+def build_tft_model():
+    """A model of YOUR TFT module + its 4 screws, sitting where they go in
+    the closed box (preview only - never printed).  Returns [(name, workplane, rgba)]."""
+    import cadquery as cq
+    mid = SLOPE_LEN / 2.0
+    cy, cz = Y_S0 + UX * mid, HF + UZ * mid
+
+    def pl(depth):
+        """plane parallel to the slope, 'depth' mm in from the outside, x across the box,
+        y up the slope, normal pointing OUT of the box (extrude(-t) goes inward)"""
+        return cq.Plane(origin=(CX, cy - NX * depth, cz - NZ * depth),
+                        xDir=(1, 0, 0), normal=(0, NX, NZ))
+
+    def slab(depth, cx_, cy_, w, h, t):
+        return cq.Workplane(pl(depth)).center(cx_, cy_).rect(w, h).extrude(-t)
+
+    s_ = TFT_PIN_SIDE
+    frame_front = WALL - TFT_POCKET_D
+    parts = []
+
+    # white frame: a ring (1.0 mm sides, 1.5 mm at the pin end, 7 mm at the far end)
+    frame = slab(frame_front, TFT_FRAME_CX, 0, TFT_FRAME_L, TFT_FRAME_S, TFT_FRAME_T)
+    op_pin, op_far, op_side = 1.5, 7.0, 1.0
+    op_l = TFT_FRAME_L - op_pin - op_far
+    op_cx = (TFT_PIN_EDGE_X - s_ * (TFT_FRAME_FROM_PIN + op_pin + op_l / 2.0))
+    frame = frame.cut(slab(frame_front + 0.01, op_cx, 0, op_l, TFT_FRAME_S - 2 * op_side,
+                           TFT_FRAME_T + 0.1))
+    parts.append(("tft_white_frame", frame, (0.96, 0.96, 0.94, 1.0)))
+    # glass (black) filling the frame opening, and the lit area just in front of it
+    parts.append(("tft_glass", slab(frame_front + 0.02, op_cx, 0, op_l - 0.1,
+                                    TFT_FRAME_S - 2 * op_side - 0.1, 1.9),
+                  (0.05, 0.05, 0.06, 1.0)))
+    parts.append(("tft_lit_area", slab(frame_front - 0.05, 0, 0, TFT_ACTIVE_W, TFT_ACTIVE_H,
+                                       0.06), (0.10, 0.45, 0.85, 1.0)))
+    # module PCB with its 4 holes
+    pcb = slab(TFT_PCB_FRONT_D, TFT_PCB_DX, 0, TFT_BODY_W, TFT_BODY_H, TFT_PCB_T)
+    holes = TFT_PTS_ALL
+    pcb = pcb.cut(cq.Workplane(pl(TFT_PCB_FRONT_D - 0.5)).pushPoints(holes)
+                  .circle(TFT_HOLE_INNER_D / 2.0).extrude(-(TFT_PCB_T + 1.0)))
+    parts.append(("tft_pcb", pcb, (0.08, 0.08, 0.10, 1.0)))
+    # 8 solder joints on the front, at the pin edge
+    pin_x = TFT_PIN_EDGE_X - s_ * TFT_PIN_ROW_FROM_EDGE
+    pins = [(pin_x, (i - 3.5) * 2.54) for i in range(8)]
+    parts.append(("tft_solder_joints",
+                  cq.Workplane(pl(TFT_PCB_FRONT_D)).pushPoints(pins).circle(0.6)
+                  .extrude(TFT_PIN_TAIL_H if TFT_RELIEF_D > 0
+                           else min(TFT_PIN_TAIL_H, TFT_PCB_FRONT_D - WALL - 0.1)),
+                  (0.75, 0.75, 0.75, 1.0)))
+    # 8-pin connector on the back, wires leaving straight back (stub)
+    con_cx = TFT_PIN_EDGE_X - s_ * 3.5
+    parts.append(("tft_connector", slab(TFT_PCB_BACK_D, con_cx, 0, 6.0, 20.0, 9.0),
+                  (0.95, 0.93, 0.85, 1.0)))
+    parts.append(("tft_wires", slab(TFT_PCB_BACK_D + 9.0, con_cx, 0, 3.0, 16.0, 3.0),
+                  (0.85, 0.20, 0.15, 1.0)))
+    # 4 M2 screw heads (3.8 dia x 1.3) on the back of the module
+    heads = cq.Workplane(pl(TFT_PCB_BACK_D)).pushPoints(TFT_PTS_ALL).circle(1.9).extrude(-1.3)
+    parts.append(("tft_screws", heads, (0.70, 0.70, 0.72, 1.0)))
+    for nm, wp, _ in parts:
+        sol = wp.solids().vals()
+        if not sol or not all(x.isValid() for x in sol):
+            raise RuntimeError("TFT model part '%s' did not build" % nm)
+    print("  ok  TFT model             %d parts (preview only)" % len(parts))
+    return parts
+
+
+def build_parts_preview():
+    """Models of the key switch, speaker, USB-C module and main PCB (all 31 KiCad parts)
+    where they sit in the closed box - preview only.  Returns [(name, workplane, rgba)]."""
+    import cadquery as cq
+
+    def comp(solids):
+        return cq.Workplane("XY").newObject([cq.Compound.makeCompound(solids)])
+
+    def box(cx, cy, z0, w, d, h):
+        return cq.Workplane("XY").box(w, d, h, centered=(True, True, False)) \
+                 .translate((cx, cy, z0)).val()
+
+    def cyl_z(cx, cy, z0, dia, h):
+        return cq.Workplane("XY").workplane(offset=z0).center(cx, cy).circle(dia / 2.0) \
+                 .extrude(h).val()
+
+    def cyl_x(x0, y, z, dia, length):          # axis along +x, starting at x0
+        return cq.Workplane("YZ").workplane(offset=x0).center(y, z).circle(dia / 2.0) \
+                 .extrude(length).val()
+
+    out = []
+    # ---- key switch on the right wall (panel = the wall, inner face at OUT - WALL)
+    wi = OUT - WALL
+    chrome, dark = (0.80, 0.81, 0.83, 1.0), (0.15, 0.15, 0.16, 1.0)
+    sw = [cyl_x(OUT, SWITCH_Y, SWITCH_Z, 15.0, 4.0),                     # front cap (outside)
+          cyl_x(wi - 12.0, SWITCH_Y, SWITCH_Z, 12.0, 12.0 + WALL),        # M12 thread
+          cyl_x(wi - 12.0 - 7.0, SWITCH_Y, SWITCH_Z, 12.5, 7.0)]          # body
+    sw.append(cq.Workplane("YZ").workplane(offset=wi - 2.5).center(SWITCH_Y, SWITCH_Z)
+              .polygon(6, 16.0).extrude(2.5).val())                       # nut, inside
+    out.append(("key_switch", comp(sw), chrome))
+    out.append(("key_switch_slot", comp([cq.Workplane("YZ").workplane(offset=OUT + 3.9)
+                                         .center(SWITCH_Y, SWITCH_Z).rect(1.6, 6.0)
+                                         .extrude(0.2).val()]), dark))
+    out.append(("key_switch_base", comp([cyl_x(wi - 21.0, SWITCH_Y, SWITCH_Z, 11.0, 2.0)]),
+                (0.10, 0.60, 0.25, 1.0)))
+    out.append(("key_switch_lugs", comp([box(wi - 23.5, SWITCH_Y + dy, SWITCH_Z - 1.5, 5.0, 0.5,
+                                             3.0) for dy in (-3.0, 3.0)]), chrome))
+    # ---- speaker in its ring on the left wall, face to the wall
+    sx0 = WALL
+    out.append(("speaker_frame", comp([cyl_x(sx0, SPK_Y, SPK_Z, SPK_D, 1.5)]),
+                (0.12, 0.12, 0.13, 1.0)))
+    out.append(("speaker_cone", comp([cyl_x(sx0 + 0.6, SPK_Y, SPK_Z, SPK_D - 3.0, 1.2)]),
+                (0.22, 0.22, 0.24, 1.0)))
+    out.append(("speaker_back", comp([cyl_x(sx0 + 1.5, SPK_Y, SPK_Z, 22.0, 4.0)]),
+                (0.70, 0.70, 0.72, 1.0)))
+    out.append(("speaker_tabs", comp([box(sx0 + 3.5, SPK_Y + dy, SPK_Z - SPK_D / 2.0 + 0.5,
+                                          3.0, 1.5, 3.0) for dy in (-2.0, 2.0)]),
+                (0.10, 0.55, 0.25, 1.0)))
+    # ---- USB-C trigger module on its step at the rear wall
+    usb_pcb_z = USB_SHELF_TOP + USB_GLUE_GAP
+    sock_l, sock_w = 7.35, 8.94
+    sock_y1 = OUT - WALL - 0.2                       # socket mouth just behind the wall
+    pcb_l, pcb_w = 14.0, 11.0
+    pcb_y1 = sock_y1 - 1.5                           # the socket overhangs the PCB by 1.5
+    out.append(("usb_c_module_pcb", comp([box(USB_X, pcb_y1 - pcb_l / 2.0, usb_pcb_z, pcb_w,
+                                              pcb_l, USB_MOD_PCB_T)]),
+                (0.45, 0.15, 0.60, 1.0)))
+    out.append(("usb_c_socket", comp([box(USB_X, sock_y1 - sock_l / 2.0,
+                                          usb_pcb_z + USB_MOD_PCB_T, sock_w, sock_l,
+                                          USB_SOCKET_H)]), chrome))
+    out.append(("usb_c_chip", comp([box(USB_X - 1.5, pcb_y1 - 8.0, usb_pcb_z + USB_MOD_PCB_T,
+                                        3.0, 3.0, 0.9)]), dark))
+    # ---- main PCB on its posts, with every part from the KiCad file
+    zb = FLOOR + STANDOFF_H
+    zt = zb + PCB_T
+    board = cq.Workplane("XY").box(PCB, PCB, PCB_T, centered=False).translate((PCB_OFF, PCB_OFF, zb))
+    for hx, hy in HOLES:
+        board = board.cut(cq.Workplane("XY").workplane(offset=zb - 0.5)
+                          .center(PCB_OFF + hx, PCB_OFF + hy).circle(1.6).extrude(PCB_T + 1.0))
+    out.append(("main_pcb", board, (0.05, 0.35, 0.18, 1.0)))
+    rounds = {r: (cx, cy, d) for r, cx, cy, d in PCB_ROUND}
+    groups = {}
+
+    def add(g, solid):
+        groups.setdefault(g, []).append(solid)
+
+    for ref, x0, y0, x1, y1, h in PCB_PARTS:
+        cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        w, d = max(2.0, x1 - x0 - 4.0), max(2.0, y1 - y0 - 4.0)   # body, not the keep-out
+        if ref in rounds:
+            rx, ry, dia = rounds[ref]
+            add("electrolytics", cyl_z(rx, ry, zt, dia, h))
+        elif ref == "U1":                                          # DevKit in its socket
+            for sx_ in (-1, 1):
+                add("headers", box(cx + sx_ * 12.7, cy, zt, 2.5, y1 - y0 - 6.0, 8.5))
+            add("devkit", box(cx, cy, zt + 8.5, 28.0, y1 - y0 - 4.0, 1.6))
+            add("rf_module", box(cx, y0 + 2.0 + 12.75, zt + 10.1, 18.0, 25.5, 3.2))
+        elif ref == "U2":                                          # MP3 player module
+            add("headers", box(cx, cy, zt, w, d, 8.5))
+            add("mp3_module", box(cx, cy, zt + 8.5, 20.5, 20.5, 1.6))
+            add("rf_module", box(cx, cy + 4.0, zt + 10.1, 11.0, 12.0, 1.9))
+        elif ref.startswith("J8"):
+            add("terminal", box(cx, cy, zt, w, d, h))
+        elif ref.startswith("J"):
+            add("jst", box(cx, cy, zt, w, d, 7.0))
+        elif ref.startswith("C"):
+            add("ceramics", box(cx, cy, zt, min(w, 5.0), min(d, 5.0) if d < w else d * 0.6, h))
+        elif ref.startswith("R"):
+            add("resistors", box(cx, cy, zt, min(w, 2.5) if h > 5 else w, min(d, 2.5) if h > 5
+                                 else 2.5, h))
+        elif ref.startswith("F"):
+            add("fuse", box(cx, cy, zt, w, min(d, 3.5), h))
+        elif ref.startswith("D"):                                  # axial diodes, lying flat
+            long_ = max(w, d) * 0.6
+            add("black_parts", box(cx, cy, zt, 3.5 if w < d else long_, long_ if w < d else 3.5,
+                                   3.5))
+        else:                                                      # TO-92
+            add("black_parts", box(cx, cy, zt, 4.5, 3.6, 5.0))
+    colours = {"electrolytics": (0.10, 0.12, 0.35, 1.0), "headers": (0.08, 0.08, 0.08, 1.0),
+               "devkit": (0.05, 0.05, 0.08, 1.0), "rf_module": (0.78, 0.78, 0.80, 1.0),
+               "mp3_module": (0.10, 0.25, 0.60, 1.0), "terminal": (0.10, 0.45, 0.20, 1.0),
+               "jst": (0.95, 0.93, 0.86, 1.0), "ceramics": (0.90, 0.60, 0.15, 1.0),
+               "resistors": (0.85, 0.75, 0.55, 1.0), "fuse": (0.95, 0.80, 0.10, 1.0),
+               "black_parts": (0.10, 0.10, 0.10, 1.0)}
+    for g, sols in groups.items():
+        out.append(("pcb_" + g, comp(sols), colours[g]))
+    for nm, wp, _ in out:
+        sol = wp.solids().vals()
+        if not sol or not all(x.isValid() for x in sol):
+            raise RuntimeError("preview part '%s' did not build" % nm)
+    print("  ok  parts preview         key switch, speaker, USB-C, main PCB (%d parts)"
+          % len(PCB_PARTS))
+    return out
+
+
 # ============================================================================
 # 5.  EXPORT
 # ============================================================================
-def export(base, lid):
-    """Writes 6 files, in this order:
-         1_enclosure_base_plus_lid_v12  - the lid sitting on the base
-         2_enclosure_lid_v12            - the lid, lying open side down as printed
-         3_enclosure_base_v12           - the base
-       each as STEP and STL."""
+def export(base, lid, tft=None):
+    """Writes these files:
+         1_enclosure_base_plus_lid_v13  - the closed box WITH the TFT, key switch, speaker,
+                                          USB-C module and main PCB inside
+                                          in place (preview only - do not order it)
+         2_enclosure_lid_v13            - the lid, lying open side down as printed
+         3_enclosure_base_v13           - the base
+       each as STEP and STL, plus
+         4_preview_in_colour_v13.step   - the same as file 1, with colours (open it in
+                                          Fusion 360 / FreeCAD / an online STEP viewer)"""
     import os
     import cadquery as cq
 
     d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
     os.makedirs(d, exist_ok=True)
     lid_flat = lid.translate((0, 0, -Z_SPLIT))
-    both = cq.Workplane("XY").newObject(base.solids().vals() + lid.solids().vals())
+    extra = []
+    for _, wp, _c in (tft or []):
+        extra += wp.solids().vals()
+    both = cq.Workplane("XY").newObject(base.solids().vals() + lid.solids().vals() + extra)
 
     written = []
-    for name, shape in (("1_enclosure_base_plus_lid_v12", both),
-                        ("2_enclosure_lid_v12", lid_flat),
-                        ("3_enclosure_base_v12", base)):
+    for name, shape in (("1_enclosure_base_plus_lid_v13", both),
+                        ("2_enclosure_lid_v13", lid_flat),
+                        ("3_enclosure_base_v13", base)):
         for ext, kw in (("step", {}), ("stl", dict(tolerance=0.01, angularTolerance=0.05))):
             p = os.path.join(d, "%s.%s" % (name, ext))
             cq.exporters.export(shape, p, **kw)
             written.append(p)
+
+    if tft:
+        try:
+            assy = cq.Assembly(name="enclosure_v13")
+            assy.add(base, name="base", color=cq.Color(0.92, 0.92, 0.90, 1.0))
+            assy.add(lid, name="lid", color=cq.Color(0.80, 0.82, 0.85, 1.0))
+            for nm, wp, rgba in tft:
+                assy.add(wp, name=nm, color=cq.Color(*rgba))
+            p = os.path.join(d, "4_preview_in_colour_v13.step")
+            if hasattr(assy, "export"):
+                assy.export(p)
+            else:
+                assy.save(p)
+            written.append(p)
+        except Exception as ex:                      # preview only - never block the parts
+            print("  ..  colour preview skipped: %s" % ex)
 
     for name, shape in (("base", base), ("lid", lid_flat)):
         bb = shape.val().BoundingBox()
@@ -1053,4 +1370,10 @@ if __name__ == "__main__":
         sys.exit(0)
     print("\nbuilding ...")
     b, l = build()
-    export(b, l)
+    t = []
+    for fn in (build_tft_model, build_parts_preview):
+        try:
+            t += fn()
+        except Exception as ex:                      # preview only - never block the parts
+            print("  ..  %s skipped: %s" % (fn.__name__, ex))
+    export(b, l, t)
