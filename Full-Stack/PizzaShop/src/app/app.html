@@ -1,0 +1,18 @@
+<header class="header">
+  <div class="container header-inner">
+    <a routerLink="/" class="logo">🍕 Pizza Shop</a>
+    <nav>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+      <a routerLink="/menu" routerLinkActive="active">Menu</a>
+      <a routerLink="/about" routerLinkActive="active">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <router-outlet />
+</main>
+
+<footer class="footer">
+  <p>© 2026 Pizza Shop · Made with Angular</p>
+</footer>

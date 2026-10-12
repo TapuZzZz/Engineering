@@ -1,0 +1,23 @@
+<h2 class="title">Our menu</h2>
+<p class="subtitle">All pizzas are 30 cm, baked to order</p>
+
+<div class="grid">
+  @for (pizza of pizzas; track pizza.id) {
+    <article class="card">
+      <div class="card-image">{{ pizza.emoji }}</div>
+      <div class="card-body">
+        <div class="card-header">
+          <h3>{{ pizza.name }}</h3>
+          @if (pizza.vegetarian) {
+            <span class="badge">Veggie</span>
+          }
+        </div>
+        <p>{{ pizza.description }}</p>
+        <div class="card-footer">
+          <span class="price">{{ pizza.price | currency: 'ILS' }}</span>
+          <button class="btn">Add</button>
+        </div>
+      </div>
+    </article>
+  }
+</div>

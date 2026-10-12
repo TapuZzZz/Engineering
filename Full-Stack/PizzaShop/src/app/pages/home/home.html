@@ -1,0 +1,18 @@
+<section class="hero">
+  <div>
+    <h1>Hot, fresh pizza<br />straight from the oven</h1>
+    <p>Hand-made dough, fresh tomatoes and real mozzarella. Delivered in 30 minutes.</p>
+    <a routerLink="/menu" class="btn">See the menu</a>
+  </div>
+  <div class="hero-image">🍕</div>
+</section>
+
+<section class="features">
+  @for (f of features; track f.title) {
+    <div class="feature">
+      <span class="icon">{{ f.icon }}</span>
+      <h3>{{ f.title }}</h3>
+      <p>{{ f.text }}</p>
+    </div>
+  }
+</section>

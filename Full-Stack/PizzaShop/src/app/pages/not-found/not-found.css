@@ -1,0 +1,34 @@
+.not-found {
+  text-align: center;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 60px 24px;
+}
+
+.code {
+  font-size: 7rem;
+  font-weight: 700;
+  color: var(--red);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.code span {
+  display: inline-block;
+  animation: wobble 2s ease-in-out infinite;
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+.not-found p { color: var(--muted); margin-bottom: 28px; }
+
+.actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--red);
+  border: 2px solid var(--red);
+}
+.btn-outline:hover { background: var(--red); color: white; }

@@ -1,0 +1,45 @@
+.title { font-size: 2rem; text-align: center; }
+.subtitle { text-align: center; color: var(--muted); margin-bottom: 32px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px rgba(43, 33, 24, 0.14);
+}
+
+.card-image {
+  background: linear-gradient(135deg, #ffe5d0, #ffd0b0);
+  font-size: 5rem;
+  text-align: center;
+  padding: 28px 0;
+}
+.card-body { display: flex; flex-direction: column; flex: 1; padding: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-body p { color: var(--muted); flex: 1; }
+
+.badge {
+  background: #e3f1e5;
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.price { font-size: 1.3rem; font-weight: 700; color: var(--red); }
+.card-footer .btn { padding: 8px 20px; }

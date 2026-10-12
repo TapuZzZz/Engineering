@@ -3,8 +3,9 @@
 """
 150 x 150 mm two-part enclosure (base + lid) for a 100 x 100 mm ESP32-S3 board.
 
-    python3 enclosure_v13.py --check     design-rule check only (NO CadQuery needed)
-    python3 enclosure_v13.py             check + build + export STEP / STL
+    python3 enclosure_v15.py --check     design-rule check only (NO CadQuery needed)
+    python3 enclosure_v15.py --scan      check + voxel scan of the base for < 0.8 mm walls / gaps
+    python3 enclosure_v15.py             check + build + export STEP / STL
 
 Contents
     - 100 x 100 mm custom PCB on 4 posts (3 real M3 holes + 1 dummy post)
@@ -24,6 +25,25 @@ Why a design-rule check is built in
     every feature against every other feature and against the JLC3DP rules
     BEFORE any CAD is built.  A clash aborts the script instead of quietly
     exporting a broken STL.
+
+v15 - JLC "< 0.8 mm wall thickness" on the base: the solid walls were all >= 0.8 mm; the
+    flagged spots were 4 hairline crevices at the speaker holder (ring dipping into the floor,
+    flat legs cutting into the curved ring).  The ring now hangs from the wall only, with a
+    1.2 mm real gap above the floor.  `--scan` voxel-checks the whole base for solid walls
+    AND gaps under 0.8 mm (numpy + scipy, no CadQuery).
+
+v14 - anti-warp revision (JLC3DP flagged v13 for deformation / warping)
+    Resin shrinks as it cures; flat thin panels and thick lumps next to thin
+    walls shrink unevenly and bend the part.  v14 removes every such cause:
+    - floor 2.5 -> 3.0 mm, so floor, walls and roof are all one thickness
+    - servo end walls: 8 mm solid -> 2.5 mm shells (cavity opens into the lid)
+    - USB-C step: solid 20x20x7 block -> 2 mm top plate on 3 legs, open front
+    - speaker holder: 6.5 mm solid skirt -> two 2.5 mm legs
+    - dummy PCB post cored like the other three
+    - rib grid under the floor (3 x 3), ribs tying the base walls to the floor,
+      and a rib frame under the flat roof: no panel spans more than ~50 mm
+    - check() verifies: no solid section thicker than MAX_SECTION, every rib
+      clear of vents / slots / screws / PCB / TFT, every cavity can drain
 """
 
 import math
@@ -57,7 +77,7 @@ WALL = 3.0
 CLEAR = 1.0
 PCB_OFF = (OUT - PCB) / 2.0 # PCB centred -> 25 mm from each outer edge
 R_OUT = 8.0                 # corner radius
-FLOOR = 2.5
+FLOOR = 3.0                 # v14: = WALL (was 2.5) - one thickness everywhere
 STANDOFF_H = 5.0
 PCB_T = 1.6
 
@@ -243,12 +263,15 @@ USB_GLUE_GAP = 1.0          # room for the hot glue under the PCB
 USB_SHELF_W = 20.0          # across (x)
 USB_SHELF_D = 20.0          # out from the inner rear wall (y) - long enough for the wire pads
 USB_SHELF_TOP = USB_Z - USB_MOD_CENTER_H - USB_GLUE_GAP  # 9.75
-USB_SHELF_H = USB_SHELF_TOP - FLOOR                       # 7.25 above the inside floor
+USB_SHELF_H = USB_SHELF_TOP - FLOOR                       # 6.75 above the inside floor
+# v14: the step is no longer a solid block. A 2 mm top plate (the glue face) stands
+# on 3 legs; the bays under it are open toward the PCB so resin drains out.
+USB_SHELF_SKIN = 2.0        # top plate and leg thickness
 
 # ---- right wall key switch (mirror image of the speaker) ------------------
 SWITCH_D = 12.8             # 12 mm thread + FDM hole tolerance (holes print ~0.4 small)
 SWITCH_Y = OUT / 2.0        # 75.0 - centred, exactly opposite the speaker
-SWITCH_Z = FLOOR + 30.0 / 2.0 + 1.0 + 1.5        # 20.0 - same height as the speaker centre
+SWITCH_Z = FLOOR + 30.0 / 2.0 + 0.3 + 1.8        # 20.1 - same height as the speaker centre
                                                  # (kept equal to SPK_Z by the checker)
 SWITCH_BODY_D = 18.0        # keep-out diameter of the body behind the panel
 SWITCH_BODY_L = 26.0        # body length behind the panel (yours: 25-26)
@@ -265,8 +288,25 @@ SPK_CLEAR = SPK_BORE_CLR
 SPK_RING_H = 6.0            # bore depth: the speaker sits fully inside it
 SPK_RING_T = 2.5
 SPK_Y = OUT / 2.0
-SPK_FLOOR_T = 2.2           # solid material between the bore and the floor
-SPK_Z = FLOOR + SPK_D / 2.0 + SPK_BORE_CLR + SPK_FLOOR_T     # 20.0
+SPK_FLOOR_T = 1.8           # bore bottom -> floor (sets the speaker height)
+# v15: JLC flagged "< 0.8 mm" on the v14 base.  Every solid wall was >= 0.8 mm; what it
+# flagged were 4 hairline crevices at the speaker holder:
+#   - where the ring dipped into the floor beside the lead channel it met the floor at
+#     only ~16 deg, leaving a ~3 mm long wedge thinner than 0.8 mm on each side
+#   - below the ring's centre, each leg's flat face met the curved ring at a sharp angle,
+#     leaving a wedge from z ~11 down to the floor on each side
+# Fix: the ring no longer touches the floor and has no legs.  It is fused to the left wall
+# round its full circle (it starts 0.5 mm inside the wall), which holds it on its own; the
+# lead channel under it is widened until the ring ends stand SPK_END_CLEAR above the floor.
+SPK_LEGS = False            # v14 legs removed (they made the ring/leg crevices)
+SPK_LEG_T = 2.5             # (only used if SPK_LEGS)
+SPK_LEG_PROUD = 0.3
+SPK_END_CLEAR = 1.2         # ring ends beside the lead channel -> floor: a real gap, >= 0.8
+SPK_Z = FLOOR + SPK_D / 2.0 + SPK_BORE_CLR + SPK_FLOOR_T     # 20.1
+_spk_ro = SPK_D / 2.0 + SPK_BORE_CLR + SPK_RING_T            # ring outer radius
+SPK_CHANNEL_HALF = math.ceil(10.0 * math.sqrt(
+    _spk_ro ** 2 - (SPK_Z - FLOOR - SPK_END_CLEAR) ** 2)) / 10.0   # 8.0: half-width of the
+                                                                   # channel under the ring
 SPK_GRILLE_D = 3.0
 SPK_GRILLE = ((0.0, 1), (5.5, 6), (10.0, 12))
 
@@ -299,6 +339,8 @@ SERVO_FIT = 1.20            # total slack at the rib tips across the body (FDM +
 SERVO_RIB_H = 1.20          # guide ribs on the two long walls
 SERVO_SIDE_WALL = 2.5
 SERVO_END_WALL = 8.0        # the ears rest on top of these
+SERVO_SHELL_T = 2.5         # v14: end walls are hollow shells of this thickness ...
+SERVO_CAP_T = 2.5           # ... closed at the top (the ear rest), open into the lid below
 SERVO_LEDGE_H = 26.0        # wall height above the roof. LOWER than SERVO_EAR_Z, so the
                             # body always stands on the roof; the small gap under the
                             # ears is filled with hot glue.
@@ -359,6 +401,57 @@ TFT_SCREW_FAR_X = TFT_FAR_EDGE_X + TFT_PIN_SIDE * (TFT_BODY_W - TFT_HOLE_SP_L) /
 TFT_PTS_FAR = [(TFT_SCREW_FAR_X, -TFT_HOLE_SP_S / 2.0), (TFT_SCREW_FAR_X, TFT_HOLE_SP_S / 2.0)]
 TFT_PTS_ALL = TFT_PTS + TFT_PTS_FAR
 
+# ---- v14 anti-warp stiffening ---------------------------------------------
+# Ribs are 0.6 x the wall: stiff enough to stop a panel bowing, thin enough not to
+# leave sink marks or become thick lumps themselves.
+RIB_T = 1.8                 # floor and roof ribs
+WALL_RIB_T = 2.0            # base wall ribs (deliberately != RIB_T: no coplanar faces
+                            # where a wall rib meets a floor rib)
+WALL_RIB_D = 3.0            # how far the wall ribs stand out from the inner wall face
+MAX_SECTION = 4.0           # thickest solid section allowed anywhere (the base rim
+                            # flange of the rail is the one intended exception)
+MAX_PANEL = 52.0            # largest unsupported span of a flat panel
+# floor grid: 2.5 mm tall -> PCB underside (z 8.0) stays 2.5 mm clear of the ribs
+FLOOR_RIB_H = 2.5
+_SPK_CHANNEL_END = WALL + SPK_RING_H + 3.0          # 12.0: past the speaker lead channel
+_USB_STEP_Y0 = OUT - WALL - USB_SHELF_D             # 127.0
+# (rib runs along y at x)       (x, y0, y1)
+FLOOR_RIBS_ALONG_Y = [(45.0, WALL - 0.2, OUT - WALL + 0.2),
+                      (75.0, WALL - 0.2, _USB_STEP_Y0 + 0.5),   # ends in the USB step leg
+                      (105.0, WALL - 0.2, OUT - WALL + 0.2)]
+# (rib runs along x at y)       (y, x0, x1)
+FLOOR_RIBS_ALONG_X = [(45.0, WALL - 0.2, OUT - WALL + 0.2),
+                      (75.0, _SPK_CHANNEL_END, OUT - WALL + 0.2),  # leaves the speaker
+                      (105.0, WALL - 0.2, OUT - WALL + 0.2)]       # lead channel open
+# base wall ribs, floor -> just under the rail foot, tying the open rim to the floor
+# The stepped rail foot fills z = Z_SPLIT-2 .. Z_SPLIT, inset 3..5 mm from the outside.
+# v13 stopped the corner ribs 0.5 mm under it and the speaker ring 0.2 mm under it:
+# hairline gaps that JLC's thin-wall check reports as "< 0.8 mm".  Everything near the
+# walls now either runs UP INTO the foot (merges) or stays >= RIM_CLEAR below it.
+RAIL_FOOT_Z0 = Z_SPLIT - 2.0
+RAIL_FOOT_STEPS = 2                 # 2 x 1.0 mm steps (v13: 4 x 0.5 mm, under 0.8 mm)
+JLC_MIN_FEATURE = 0.8               # the limit in JLC's report
+RIB_TOP_IN_RIM = Z_SPLIT - 0.3      # rib tops end inside the top step of the foot
+RIM_CLEAR = 1.0                     # otherwise keep at least this much under the foot
+WALL_RIB_TOP = RIB_TOP_IN_RIM
+CORNER_RIB_TOP = RIB_TOP_IN_RIM     # ribs from the corner screw columns to the walls
+# the speaker ring top cannot drop 1 mm (it is already down at the floor), so a small
+# block ties it up into the foot instead of leaving a 0.1 mm gap
+SPK_TIE_W = 12.0                    # along the wall, centred on the speaker
+SPK_TIE_X1 = WALL + 1.8             # 4.8: out from the outer face (inside the foot's 5.0)
+WALL_RIBS = {"front": (45.0, 75.0, 105.0),        # x positions
+             "rear": (45.0, 62.0, 88.0, 105.0),   # x (75 is the USB-C opening + step)
+             "left": (53.0, 96.0),                # y (between vents and speaker ring)
+             "right": (53.0, 96.0)}               # y (between vents and key switch)
+# rib frame under the flat roof of the lid
+ROOF_RIB_H = 3.0
+ROOF_RIB_Y0 = 60.0          # front-back ribs start here (behind the TFT module)
+ROOF_RIBS_ALONG_Y = [(54.0, ROOF_RIB_Y0, OUT - WALL + 0.2),     # (x, y0, y1)
+                     (96.0, ROOF_RIB_Y0, OUT - WALL + 0.2)]
+ROOF_RIBS_ALONG_X = [(64.0, WALL - 0.2, OUT - WALL + 0.2),      # (y, x0, x1)
+                     (128.0, WALL - 0.2, 56.0),                 # skips the servo lead
+                     (128.0, 94.0, OUT - WALL + 0.2)]           # slot + cable slot
+
 # ---------------- Helpers ----------------
 # (make_drawings.py reads everything above this line)
 
@@ -381,6 +474,80 @@ def inner_slope_y(z):
 def _ov(a0, a1, b0, b1):
     """overlap of two 1-D intervals; negative = gap"""
     return min(a1, b1) - max(a0, b0)
+
+
+def spk_ring_top():
+    return SPK_Z + SPK_D / 2.0 + SPK_CLEAR + SPK_RING_T
+
+
+def spk_needs_tie():
+    """True if the ring top is too close under the rail foot to leave a clean gap"""
+    return spk_ring_top() > RAIL_FOOT_Z0 - RIM_CLEAR
+
+
+def spk_channel_tan():
+    """tan of the half-angle of the V cut under the speaker ring (apex at the ring centre);
+    it crosses the ring's outer surface SPK_CHANNEL_HALF either side of the centre"""
+    r_o = SPK_D / 2.0 + SPK_CLEAR + SPK_RING_T
+    return SPK_CHANNEL_HALF / math.sqrt(r_o ** 2 - SPK_CHANNEL_HALF ** 2)
+
+
+def spk_tie_z0():
+    """bottom of the tie block: just above the top of the bore, inside the ring wall"""
+    return SPK_Z + SPK_D / 2.0 + SPK_CLEAR + 0.3
+
+
+# ---- v14 stiffening geometry, as boxes (x0, y0, z0, x1, y1, z1) -------------
+# One source for both check() and build(), so the checker tests exactly what is built.
+def floor_rib_boxes():
+    z0, z1 = FLOOR - 0.2, FLOOR + FLOOR_RIB_H
+    out = [(x - RIB_T / 2, y0, z0, x + RIB_T / 2, y1, z1) for x, y0, y1 in FLOOR_RIBS_ALONG_Y]
+    out += [(x0, y - RIB_T / 2, z0, x1, y + RIB_T / 2, z1) for y, x0, x1 in FLOOR_RIBS_ALONG_X]
+    return out
+
+
+def wall_rib_boxes():
+    z0, z1, h, d = FLOOR - 0.2, WALL_RIB_TOP, WALL_RIB_T / 2, WALL_RIB_D
+    out = []
+    for x in WALL_RIBS["front"]:
+        out.append(("front", x, (x - h, WALL - 0.2, z0, x + h, WALL + d, z1)))
+    for x in WALL_RIBS["rear"]:
+        out.append(("rear", x, (x - h, OUT - WALL - d, z0, x + h, OUT - WALL + 0.2, z1)))
+    for y in WALL_RIBS["left"]:
+        out.append(("left", y, (WALL - 0.2, y - h, z0, WALL + d, y + h, z1)))
+    for y in WALL_RIBS["right"]:
+        out.append(("right", y, (OUT - WALL - d, y - h, z0, OUT - WALL + 0.2, y + h, z1)))
+    return out
+
+
+def roof_rib_boxes():
+    z0, z1 = HB - WALL - ROOF_RIB_H, HB - WALL + 0.2
+    out = [(x - RIB_T / 2, y0, z0, x + RIB_T / 2, y1, z1) for x, y0, y1 in ROOF_RIBS_ALONG_Y]
+    out += [(x0, y - RIB_T / 2, z0, x1, y + RIB_T / 2, z1) for y, x0, x1 in ROOF_RIBS_ALONG_X]
+    return out
+
+
+def servo_cavities():
+    """hollow cores of the two servo end walls, (x0, y0, x1, y1); open into the lid"""
+    s = SERVO_SHELL_T
+    out = [(SERVO_CX - SRV_SIDE_X / 2 + s, SRV_OUT_Y0 + s,           # front end wall
+            SERVO_CX + SRV_SIDE_X / 2 - s, SRV_POCKET_Y0 - s)]
+    for k in (-1, 1):                                                 # rear wall: 2 pillars
+        a = SERVO_CX + k * (SERVO_WIRE_W / 2 + s)                     # either side of the
+        b = SERVO_CX + k * (SRV_SIDE_X / 2 - s)                       # lead slot
+        out.append((min(a, b), SRV_POCKET_Y1 + s, max(a, b), SRV_OUT_Y1 - s))
+    return out
+
+
+def usb_step_parts():
+    """top plate + 3 legs of the USB-C step, as boxes"""
+    t = USB_SHELF_SKIN
+    x0 = USB_X - USB_SHELF_W / 2
+    y0, y1 = OUT - WALL - USB_SHELF_D, OUT - WALL + 0.3
+    plate = (x0, y0, USB_SHELF_TOP - t, x0 + USB_SHELF_W, y1, USB_SHELF_TOP)
+    legs = [(lx, y0, FLOOR - 0.2, lx + t, y1, USB_SHELF_TOP - t + 0.3)
+            for lx in (x0, USB_X - t / 2, x0 + USB_SHELF_W - t)]
+    return plate, legs
 
 
 # ============================================================================
@@ -449,20 +616,28 @@ def check(verbose=True):
         return out
 
     spk_r = SPK_D / 2 + SPK_CLEAR
+    spk_w = spk_r + SPK_RING_T + (SPK_LEG_PROUD if SPK_LEGS else 0.0)   # half-width
     walls = {
         "left": slot_boxes() + [
             ("speaker bore", SPK_Y - spk_r, SPK_Y + spk_r,
              SPK_Z - spk_r, SPK_Z + spk_r, "hole", "spk"),
-            ("speaker ring", SPK_Y - spk_r - SPK_RING_T, SPK_Y + spk_r + SPK_RING_T,
-             SPK_Z - spk_r - SPK_RING_T, SPK_Z + spk_r + SPK_RING_T, "solid", "spk")],
+            ("speaker ring", SPK_Y - spk_w, SPK_Y + spk_w,
+             FLOOR, SPK_Z + spk_r + SPK_RING_T, "solid", "spk")],
         "right": slot_boxes() + [
             ("key switch hole", SWITCH_Y - SWITCH_D / 2, SWITCH_Y + SWITCH_D / 2,
              SWITCH_Z - SWITCH_D / 2, SWITCH_Z + SWITCH_D / 2, "hole", "sw"),
             ("key switch nut face", SWITCH_Y - SWITCH_NUT_D / 2, SWITCH_Y + SWITCH_NUT_D / 2,
              SWITCH_Z - SWITCH_NUT_D / 2, SWITCH_Z + SWITCH_NUT_D / 2, "solid", "sw")],
         "rear": [("USB-C pocket", USB_X - USB_POCKET_W / 2, USB_X + USB_POCKET_W / 2,
-                  USB_Z - USB_POCKET_H / 2, USB_Z + USB_POCKET_H / 2, "hole", "usb")],
+                  USB_Z - USB_POCKET_H / 2, USB_Z + USB_POCKET_H / 2, "hole", "usb"),
+                 ("USB-C step", USB_X - USB_SHELF_W / 2, USB_X + USB_SHELF_W / 2,
+                  FLOOR, USB_SHELF_TOP, "solid", "usb")],
+        "front": [],
     }
+    # v14: wall ribs are solid features on the inside of their wall
+    for wname, pos, _b in wall_rib_boxes():
+        walls[wname].append(("wall rib %.0f" % pos, pos - WALL_RIB_T / 2, pos + WALL_RIB_T / 2,
+                             FLOOR, WALL_RIB_TOP, "solid", "rib%s%.0f" % (wname, pos)))
     for wall, feats in walls.items():
         for i in range(len(feats)):
             for j in range(i + 1, len(feats)):
@@ -696,31 +871,46 @@ def check(verbose=True):
           "toward the middle of the box right after the connector" % (r_, g_, n_))
 
     # ---- 3.5 roof: cradle vs vents vs cable slot vs lid screw posts ------
+    # (name, x0, y0, x1, y1, group, layer)  layer: above / through / below the roof.
+    # Features of the same group are one design and may touch (the servo mount and
+    # its slots, the rib frame); a feature above the roof cannot clash with a rib below.
     roof = [("servo mount", SERVO_CX - SRV_SIDE_X / 2, SRV_OUT_Y0,
-             SERVO_CX + SRV_SIDE_X / 2, SRV_OUT_Y1),
+             SERVO_CX + SRV_SIDE_X / 2, SRV_OUT_Y1, "servo", "above"),
             ("cable slot", SERVO_CX - SERVO_HOLE_L / 2, SERVO_HOLE_CY - SERVO_HOLE_W / 2,
-             SERVO_CX + SERVO_HOLE_L / 2, SERVO_HOLE_CY + SERVO_HOLE_W / 2)]
+             SERVO_CX + SERVO_HOLE_L / 2, SERVO_HOLE_CY + SERVO_HOLE_W / 2, "servo", "through"),
+            ("servo lead slot", SERVO_CX - SERVO_WIRE_W / 2, SRV_POCKET_Y1,
+             SERVO_CX + SERVO_WIRE_W / 2, SERVO_HOLE_CY, "servo", "through")]
+    for k, (x0c, y0c, x1c, y1c) in enumerate(servo_cavities()):
+        roof.append(("servo end-wall core %d" % k, x0c, y0c, x1c, y1c, "servo", "through"))
     for off in ROOF_VENT_OFFS:
         for s in (-1, 1):
             roof.append(("roof vent x=%+.1f" % (s * off),
                          CX + s * off - VENT_SLOT_W / 2, SERVO_CY - ROOF_VENT_LEN / 2,
-                         CX + s * off + VENT_SLOT_W / 2, SERVO_CY + ROOF_VENT_LEN / 2))
+                         CX + s * off + VENT_SLOT_W / 2, SERVO_CY + ROOF_VENT_LEN / 2,
+                         "vent%d" % (s * off * 10), "through"))
     for x, y in ENC_SCREWS:
         if y > Y_S1:
             roof.append(("lid screw post (%.0f,%.0f)" % (x, y),
-                         x - SCREW_BOSS_R, y - SCREW_BOSS_R, x + SCREW_BOSS_R, y + SCREW_BOSS_R))
+                         x - SCREW_BOSS_R, y - SCREW_BOSS_R, x + SCREW_BOSS_R, y + SCREW_BOSS_R,
+                         "post%.0f" % x, "through"))
+    for k, (x0r, y0r, _z0, x1r, y1r, _z1) in enumerate(roof_rib_boxes()):
+        roof.append(("roof rib %d" % k, x0r, y0r, x1r, y1r, "rib", "below"))
     for i in range(len(roof)):
         for j in range(i + 1, len(roof)):
-            n1, a0, b0, a1, b1 = roof[i]
-            n2, c0, d0, c1, d1 = roof[j]
+            n1, a0, b0, a1, b1, g1, l1 = roof[i]
+            n2, c0, d0, c1, d1, g2, l2 = roof[j]
+            if g1 == g2 or {l1, l2} == {"above", "below"}:
+                continue
             ox, oy = _ov(a0, a1, c0, c1), _ov(b0, b1, d0, d1)
             if ox > 0 and oy > 0:
                 E("roof: '%s' overlaps '%s' by %.2f x %.2f mm" % (n1, n2, ox, oy))
             elif ox > -2.0 and oy > -2.0 and (ox > 0 or oy > 0):
                 W("roof: '%s' and '%s' are only %.2f mm apart" % (n1, n2, max(-ox, -oy)))
-    for n1, a0, b0, a1, b1 in roof:
+    for n1, a0, b0, a1, b1, g1, l1 in roof:
         if b0 < Y_S1 + 1.0:
             E("roof: '%s' runs off the front of the flat roof" % n1)
+        if g1 == "rib":
+            continue                     # ribs are meant to run into the walls
         if b1 > OUT - WALL - 1.0:
             E("roof: '%s' runs into the rear wall" % n1)
         if a0 < WALL + 1.0 or a1 > OUT - WALL - 1.0:
@@ -757,10 +947,23 @@ def check(verbose=True):
       % (SERVO_WIRE_W, SERVO_PLUG_W, SERVO_WIRE_W - SERVO_PLUG_W, strip))
 
     # ---- 3.7 speaker -----------------------------------------------------
-    if SPK_Z + SPK_D / 2 + SPK_CLEAR + SPK_RING_T > Z_SPLIT - 1.0:
+    if spk_ring_top() > Z_SPLIT - 1.0:
         E("speaker holder crosses the base/lid split")
-    N("speaker holder top is %.1f mm below the split" %
-      (Z_SPLIT - (SPK_Z + SPK_D / 2 + SPK_CLEAR + SPK_RING_T)))
+    if spk_needs_tie():
+        r_o = SPK_D / 2.0 + SPK_CLEAR + SPK_RING_T
+        z_edge = SPK_Z + math.sqrt(max(0.0, r_o ** 2 - (SPK_TIE_W / 2.0) ** 2))
+        if spk_tie_z0() > z_edge - 0.3:
+            E("speaker tie block (%.0f mm wide) does not reach down into the ring at its ends"
+              % SPK_TIE_W)
+        # beyond the tie the ring must already be >= RIM_CLEAR below the foot
+        if z_edge > RAIL_FOOT_Z0 - RIM_CLEAR + 0.01:
+            E("speaker ring is still %.2f mm under the rail foot just past the tie block - "
+              "widen SPK_TIE_W" % (RAIL_FOOT_Z0 - z_edge))
+        N("speaker ring top (z=%.2f) would be %.2f mm under the rail foot: a %.0f mm tie "
+          "block joins it up into the foot instead (no hairline gap)"
+          % (spk_ring_top(), RAIL_FOOT_Z0 - spk_ring_top(), SPK_TIE_W))
+    else:
+        N("speaker ring top is %.1f mm below the rail foot" % (RAIL_FOOT_Z0 - spk_ring_top()))
     r_in_ = SPK_D / 2.0 + SPK_CLEAR
     if SPK_CLEAR < HOLE_TOL / 2.0 + 0.05:
         E("speaker bore clearance %.2f mm per side is too tight for %s (+-%.1f)"
@@ -773,12 +976,201 @@ def check(verbose=True):
     if under < 1.5:
         E("only %.2f mm of material under the speaker bore (needs >= 1.5)" % under)
     N("speaker holder: full round ring (bore dia %.1f for the %.1f mm speaker, %.1f mm per "
-      "side), %.1f mm wall, %.1f mm deep, solid lower part, %.1f mm under the bore. No ribs."
-      % (2 * r_in_, SPK_D, SPK_CLEAR, SPK_RING_T, SPK_RING_H, under))
+      "side), %.1f mm wall, %.1f mm deep, fused to the left wall round its whole circle%s; "
+      "bore bottom %.1f mm above the floor."
+      % (2 * r_in_, SPK_D, SPK_CLEAR, SPK_RING_T, SPK_RING_H,
+         ", on two %.1f mm legs" % SPK_LEG_T if SPK_LEGS else ", no legs", under))
+    # v15: a curved ring that dips into a flat floor, or a flat leg face that cuts into the
+    # curved ring, meets it at a shallow angle and leaves a long hairline crevice - JLC
+    # reports those as "< 0.8 mm".  The ring ends beside the lead channel must stand a
+    # REAL gap above the floor instead.
+    r_out_ = r_in_ + SPK_RING_T
+    z_end = SPK_Z - math.sqrt(r_out_ ** 2 - SPK_CHANNEL_HALF ** 2)
+    if z_end - FLOOR < max(SPK_END_CLEAR, JLC_MIN_FEATURE) - 0.01:
+        E("speaker ring ends beside the lead channel sit %.2f mm %s the floor - they meet it "
+          "at a shallow angle and leave a hairline crevice (JLC flags < 0.8 mm)"
+          % (abs(z_end - FLOOR), "above" if z_end > FLOOR else "into"))
+    if SPK_LEGS:
+        E("speaker legs: a flat leg face cutting into the curved ring leaves a hairline "
+          "crevice below the ring's centre (JLC flags < 0.8 mm) - set SPK_LEGS = False")
+    N("speaker lead channel: V cut, %.1f mm wide at the ring; the ring ends are radial faces and stand %.2f mm above the floor (no "
+      "crevice), and the ring touches nothing but the wall and the rail tie"
+      % (2 * SPK_CHANNEL_HALF, z_end - FLOOR))
     N("speaker: push it in from inside the box, face to the wall, then run a bead of hot "
       "glue around the back of the rim")
     N("speaker: from the ring to the PCB edge there is %.1f mm of free space to put it in, "
       "even with the PCB already mounted" % (PCB_OFF - WALL - SPK_RING_H))
+
+    # ---- 3.9 v14 anti-warp rules -----------------------------------------
+    # (a) one wall thickness everywhere
+    if abs(FLOOR - WALL) > 0.01:
+        W("floor %.1f mm differs from the walls %.1f mm - uneven shrinkage" % (FLOOR, WALL))
+    # (b) ribs: thick enough to print, thin enough not to become lumps themselves
+    for nm, t in (("floor/roof rib", RIB_T), ("wall rib", WALL_RIB_T)):
+        if t < max(JLC_THIN, MIN_DETAIL):
+            E("%s %.2f mm < JLC thin-wall limit %.1f" % (nm, t, JLC_THIN))
+        if t > 0.75 * WALL:
+            W("%s %.2f mm > 0.75 x wall: it can leave sink marks" % (nm, t))
+    if abs(WALL_RIB_T - RIB_T) < 0.05:
+        W("wall ribs and floor ribs are the same thickness: coplanar faces where they meet")
+    # (c) no solid section thicker than MAX_SECTION (and none thinner than JLC allows)
+    sections = [
+        ("servo end-wall shell", SERVO_SHELL_T), ("servo end-wall cap", SERVO_CAP_T),
+        ("servo pocket side wall", SERVO_SIDE_WALL),
+        ("USB-C step plate / legs", USB_SHELF_SKIN),
+        ("speaker ring", SPK_RING_T),
+        ("speaker ring at the equator", SPK_RING_T + (SPK_LEG_PROUD if SPK_LEGS else 0)),
+        ("PCB post round its pilot", 3.5 - 1.3),
+        ("base screw column round its pilot", SCREW_BOSS_R - ENC_PILOT_D / 2.0),
+        ("lid screw boss round its hole", SCREW_BOSS_R - SCREW_HOLE / 2.0),
+        ("TFT boss round its pilot", (TFT_BOSS_D - TFT_PILOT_D) / 2.0),
+        ("wall / floor / roof", max(WALL, FLOOR)),
+    ]
+    for nm, t in sections:
+        if t > MAX_SECTION:
+            E("%s is %.2f mm thick (> %.1f): thick lump next to thin walls -> warping"
+              % (nm, t, MAX_SECTION))
+        if t < JLC_THIN:
+            E("%s is only %.2f mm" % (nm, t))
+    N("thickest solid section: %s, %.2f mm (limit %.1f; the base rim flange of the rail "
+      "is the one intended exception - it stiffens the open edge)"
+      % (max(sections, key=lambda s: s[1]) + (MAX_SECTION,)))
+    # (d) every hollow must drain (SLA traps liquid resin in closed pockets)
+    for k, (x0c, y0c, x1c, y1c) in enumerate(servo_cavities()):
+        w_ = min(x1c - x0c, y1c - y0c)
+        if w_ < 1.5:
+            E("servo end-wall core %d is only %.2f mm wide - resin cannot drain" % (k, w_))
+    N("servo end walls: %.1f mm shells, %.1f mm cap under the ears, cores %s mm, open into "
+      "the lid so resin drains" % (SERVO_SHELL_T, SERVO_CAP_T,
+                                   " / ".join("%.1f x %.1f" % (c[2] - c[0], c[3] - c[1])
+                                              for c in servo_cavities())))
+    bay = (USB_SHELF_W - 3 * USB_SHELF_SKIN) / 2.0
+    bay_h = USB_SHELF_TOP - USB_SHELF_SKIN - FLOOR
+    if bay < 2.0 or bay_h < 2.0:
+        E("USB-C step bays %.1f x %.1f mm are too small to drain" % (bay, bay_h))
+    if bay > 10.0:
+        W("USB-C step top plate spans %.1f mm between legs" % bay)
+    N("USB-C step: %.1f mm plate on 3 legs, two %.1f x %.1f mm bays open toward the PCB"
+      % (USB_SHELF_SKIN, bay, bay_h))
+    # (e) floor ribs vs the PCB underside, the speaker lead channel, posts and step
+    z_pcb_bot = FLOOR + STANDOFF_H
+    if z_pcb_bot - (FLOOR + FLOOR_RIB_H) < 2.0:
+        E("floor ribs leave only %.2f mm under the PCB for the through-hole leads"
+          % (z_pcb_bot - FLOOR - FLOOR_RIB_H))
+    ch_y0, ch_y1 = SPK_Y - SPK_CHANNEL_HALF, SPK_Y + SPK_CHANNEL_HALF
+    ch_x1 = WALL + SPK_RING_H + 0.5
+    for b in floor_rib_boxes():
+        x0, y0, _z0, x1, y1, _z1 = b
+        if _ov(x0, x1, WALL, ch_x1 + 1.5) > 0 and _ov(y0, y1, ch_y0, ch_y1) > 0:
+            E("a floor rib blocks the speaker lead channel")
+        for hx_, hy_ in HOLES + [DUMMY]:
+            px_, py_ = hx_ + PCB_OFF, hy_ + PCB_OFF
+            if _ov(x0, x1, px_ - 3.5, px_ + 3.5) > -1.0 and _ov(y0, y1, py_ - 3.5, py_ + 3.5) > -1.0:
+                W("floor rib runs into / next to the PCB post at (%.0f,%.0f)" % (px_, py_))
+        for sx_, sy_ in ENC_SCREWS:
+            if _ov(x0, x1, sx_ - SCREW_BOSS_R, sx_ + SCREW_BOSS_R) > 0 and \
+               _ov(y0, y1, sy_ - SCREW_BOSS_R, sy_ + SCREW_BOSS_R) > 0:
+                E("floor rib runs into the corner screw column at (%.0f,%.0f)" % (sx_, sy_))
+    N("floor: %d ribs %.1f x %.1f mm; PCB underside %.1f mm above them (trim the "
+      "through-hole leads to <= 2 mm)" % (len(floor_rib_boxes()), RIB_T, FLOOR_RIB_H,
+                                          z_pcb_bot - FLOOR - FLOOR_RIB_H))
+    # (f) largest unsupported panel: a panel held on 4 sides bends across its SHORT side,
+    #     so every grid cell is judged by min(width, depth)
+    def cuts(lines, lo, hi):
+        p = sorted(set([lo, hi] + [v for v in lines if lo < v < hi]))
+        return list(zip(p, p[1:]))
+
+    def worst_cell(xs, ys):
+        cells = [(min(x1 - x0, y1 - y0), x1 - x0, y1 - y0) for x0, x1 in xs for y0, y1 in ys]
+        return max(cells)
+
+    f_cell = worst_cell(cuts([x for x, _a, _b in FLOOR_RIBS_ALONG_Y], WALL, OUT - WALL),
+                        cuts([y for y, _a, _b in FLOOR_RIBS_ALONG_X], WALL, OUT - WALL))
+    r_cell = worst_cell(cuts([x for x, _a, _b in ROOF_RIBS_ALONG_Y] +
+                             [SERVO_CX - SRV_SIDE_X / 2, SERVO_CX + SRV_SIDE_X / 2],
+                             WALL, OUT - WALL),
+                        cuts([y for y, _a, _b in ROOF_RIBS_ALONG_X],
+                             inner_slope_y(HB - WALL), OUT - WALL))
+    sides = {}
+    for wname, pos, _b in wall_rib_boxes():
+        sides.setdefault(wname, []).append(pos)
+    # base walls: the top edge is free, so the span ALONG the wall is what counts
+    wmax = max(max(b - a for a, b in cuts(v, R_OUT, OUT - R_OUT)) for v in sides.values())
+    for nm, s_ in (("floor panel", f_cell[0]), ("roof panel", r_cell[0]),
+                   ("base wall between ribs", wmax)):
+        if s_ > MAX_PANEL:
+            E("%s spans %.1f mm unsupported (> %.0f)" % (nm, s_, MAX_PANEL))
+    N("largest unsupported panels: floor %.0f x %.0f, roof %.0f x %.0f, base walls %.0f mm "
+      "between ribs (v13: floor 144 x 144, roof 144 x 92, walls 134)"
+      % (f_cell[1], f_cell[2], r_cell[1], r_cell[2], wmax))
+    # (g) roof ribs vs everything hanging inside the lid
+    rib_z0 = HB - WALL - ROOF_RIB_H
+    top_part = max(FLOOR + STANDOFF_H + PCB_T + p[5] for p in PCB_PARTS)
+    if rib_z0 - top_part < 5.0:
+        E("roof ribs come within %.1f mm of the tallest PCB part" % (rib_z0 - top_part))
+    if rib_z0 - (Z_SPLIT + RAIL_H) < 3.0:
+        E("roof ribs reach down to the base rail")
+    tft_y = max(Y_S0 + UX * sl - NX * d_
+                for sl in ((SLOPE_LEN - TFT_BODY_H) / 2.0, (SLOPE_LEN + TFT_BODY_H) / 2.0)
+                for d_ in (0.0, TFT_PCB_BACK_D + 3.0))
+    if ROOF_RIB_Y0 - tft_y < 3.0:
+        E("roof ribs start %.1f mm behind the TFT module (needs >= 3)" % (ROOF_RIB_Y0 - tft_y))
+    if ROOF_RIB_Y0 < inner_slope_y(HB - WALL):
+        E("roof ribs start in front of the flat roof")
+    N("roof: %d ribs %.1f x %.1f mm, %.1f mm behind the TFT module, %.1f mm above the "
+      "tallest PCB part" % (len(roof_rib_boxes()), RIB_T, ROOF_RIB_H, ROOF_RIB_Y0 - tft_y,
+                            rib_z0 - top_part))
+
+    # (h) nothing may stop just under the rail foot: either merge into it or keep clear.
+    #     (v13 failed JLC's "< 0.8 mm wall thickness" here: 0.5 mm and 0.2 mm gaps)
+    rim_feats = [("corner column ribs", CORNER_RIB_TOP), ("base wall ribs", WALL_RIB_TOP),
+                 ("speaker ring (with tie)" if spk_needs_tie() else "speaker ring",
+                  RIB_TOP_IN_RIM if spk_needs_tie() else spk_ring_top())]
+    for nm, top in rim_feats:
+        merges = RAIL_FOOT_Z0 + 1.5 <= top <= Z_SPLIT - 0.1
+        clear = top <= RAIL_FOOT_Z0 - RIM_CLEAR
+        if not (merges or clear):
+            E("%s end at z=%.2f: %s (JLC flags < 0.8 mm)"
+              % (nm, top, ("%.2f mm under the rail foot - a hairline gap" % (RAIL_FOOT_Z0 - top))
+                 if top < RAIL_FOOT_Z0 else "only part-way into the rail foot - gaps under "
+                 "its upper step"))
+    st_ = 2.0 / RAIL_FOOT_STEPS
+    if st_ < JLC_MIN_FEATURE:
+        E("rail foot steps are %.2f mm - below JLC's %.1f mm minimum" % (st_, JLC_MIN_FEATURE))
+    if RIB_TOP_IN_RIM < Z_SPLIT - st_ + 0.1 or SPK_TIE_X1 > WALL + 2.0 - 0.1:
+        E("ribs / speaker tie do not end inside the top step of the rail foot")
+    N("rim: corner ribs, wall ribs and the speaker ring all run up into the rail foot - "
+      "no gaps under the base/lid joint")
+
+    # (i) every small dimension of the BASE against JLC's 0.8 mm report limit
+    g_r = [(r, n) for r, n in SPK_GRILLE if n > 0]
+    grille_web = min([2 * r * math.sin(math.pi / n) - SPK_GRILLE_D for r, n in g_r if n > 1] +
+                     [b[0] - a[0] - SPK_GRILLE_D for a, b in zip(SPK_GRILLE, SPK_GRILLE[1:])])
+    base_dims = [
+        ("side vent web", VENT_PITCH - VENT_SLOT_W),
+        ("speaker grille web", grille_web),
+        ("USB-C web behind the pocket", WALL - USB_POCKET_DEPTH),
+        ("USB-C pocket rim round the slot", (USB_POCKET_W - USB_SLOT_W) / 2.0),
+        ("wall left at the pry notches", WALL - 0.75),
+        ("locating rail", RAIL_T),
+        ("rail foot step", 2.0 / RAIL_FOOT_STEPS),
+        ("floor rib", RIB_T), ("wall rib", WALL_RIB_T), ("corner column rib", 2.4),
+        ("PCB post wall", 3.5 - 1.3), ("USB-C step plate / legs", USB_SHELF_SKIN),
+        ("speaker ring", min(SPK_RING_T, SPK_LEG_T) if SPK_LEGS else SPK_RING_T),
+        ("speaker ring end -> floor gap",
+         SPK_Z - math.sqrt((SPK_D / 2 + SPK_CLEAR + SPK_RING_T) ** 2 - SPK_CHANNEL_HALF ** 2)
+         - FLOOR),
+        ("floor under the corner pilots", FLOOR - 0.1),
+        ("gap wall rib - nearest vent", min(abs(p - y) - WALL_RIB_T / 2 - VENT_SLOT_W / 2
+                                           for p in WALL_RIBS["left"] + WALL_RIBS["right"]
+                                           for a, b in VENT_BLOCKS for y in vent_ys(a, b))),
+    ]
+    small = min(base_dims, key=lambda d: d[1])
+    for nm, v in base_dims:
+        if v < JLC_MIN_FEATURE:
+            E("base: %s is %.2f mm (< %.1f)" % (nm, v, JLC_MIN_FEATURE))
+    N("base: smallest dimension is the %s, %.2f mm (JLC limit %.1f)"
+      % (small[0], small[1], JLC_MIN_FEATURE))
 
     # ---- 3.8 printing notes ---------------------------------------------
     if PROCESS == "SLA":
@@ -813,6 +1205,208 @@ def check(verbose=True):
               % (base_bb + lid_bb))
         print("=" * 74)
     return err, warn
+
+
+# ============================================================================
+# 3b.  THIN-WALL / HAIRLINE-GAP SCAN OF THE BASE  (numpy + scipy, no CadQuery)
+# ============================================================================
+# check() tests the dimensions it knows about.  JLC's report also catches what nobody
+# wrote down: wedges where a curved face meets a flat one at a shallow angle.  This
+# voxel model of the base follows build() step by step and flags every solid region AND
+# every gap narrower than 0.8 mm.  Keep it in step with build() when the base changes.
+#     python3 app.py --scan          (~20 min at 0.125 mm)
+def _scan_impl():
+    import time
+    import numpy as np
+    from scipy import ndimage as ndi
+    import sys as _sys
+    A = _sys.modules[__name__]
+    RES = SCAN_RES
+    LIM = 0.8                      # JLC report limit
+    R = LIM / 2.0
+
+
+    def rrect(x, y, x0, y0, w, d, r):
+        cx, cy = x0 + w / 2, y0 + d / 2
+        qx = np.abs(x - cx) - (w / 2 - r)
+        qy = np.abs(y - cy) - (d / 2 - r)
+        return (np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) <= r) & (qx <= r) & (qy <= r)
+
+
+    def box(X, Y, Z, b):
+        x0, y0, z0, x1, y1, z1 = b
+        return (X >= x0) & (X <= x1) & (Y >= y0) & (Y <= y1) & (Z >= z0) & (Z <= z1)
+
+
+    def cyl_z(X, Y, Z, cx, cy, r, z0, z1):
+        return ((X - cx) ** 2 + (Y - cy) ** 2 <= r * r) & (Z >= z0) & (Z <= z1)
+
+
+    def cyl_x(X, Y, Z, cy, cz, r, x0, x1):
+        return ((Y - cy) ** 2 + (Z - cz) ** 2 <= r * r) & (X >= x0) & (X <= x1)
+
+
+    def stadium(u, v, length, width):          # long axis along u
+        h = length / 2 - width / 2
+        q = np.maximum(np.abs(u) - h, 0)
+        return q * q + v * v <= (width / 2) ** 2
+
+
+    def ring_solid(X, Y, Z, io, ii, h, z0):
+        O = A.OUT
+        a = rrect(X, Y, io, io, O - 2 * io, O - 2 * io, A.R_OUT - io)
+        b = rrect(X, Y, ii, ii, O - 2 * ii, O - 2 * ii, A.R_OUT - ii)
+        return a & ~b & (Z >= z0) & (Z <= z0 + h)
+
+
+    def base(X, Y, Z):
+        O, W, F, ZS = A.OUT, A.WALL, A.FLOOR, A.Z_SPLIT
+        s = rrect(X, Y, 0, 0, O, O, A.R_OUT) & (Z >= 0) & (Z <= ZS)
+        s &= ~(rrect(X, Y, W, W, O - 2 * W, O - 2 * W, A.R_OUT - W) & (Z >= F))
+        # joint
+        st = 2.0 / A.RAIL_FOOT_STEPS
+        for i in range(A.RAIL_FOOT_STEPS):
+            s |= ring_solid(X, Y, Z, W - A.RAIL_GAP, W + st * (i + 1), st, A.RAIL_FOOT_Z0 + st * i)
+        s |= ring_solid(X, Y, Z, W, W + A.RAIL_T, A.RAIL_H + 0.1, ZS - 0.1)
+        for b in A.floor_rib_boxes():
+            s |= box(X, Y, Z, b)
+        for _w, _p, b in A.wall_rib_boxes():
+            s |= box(X, Y, Z, b)
+        # PCB posts
+        pts = [(p[0] + A.PCB_OFF, p[1] + A.PCB_OFF) for p in A.HOLES + [A.DUMMY]]
+        for x, y in pts:
+            s |= cyl_z(X, Y, Z, x, y, 3.5, F - 0.01, F + A.STANDOFF_H)
+        for x, y in pts:
+            s &= ~cyl_z(X, Y, Z, x, y, 1.3, F + 1.0, F + 1.0 + A.STANDOFF_H + 2)
+        # corner columns
+        for x, y in A.ENC_SCREWS:
+            s |= cyl_z(X, Y, Z, x, y, A.SCREW_BOSS_R, F - 0.01, ZS)
+            wx = W if x < A.CX else O - W
+            wy = W if y < A.CX else O - W
+            rh = A.CORNER_RIB_TOP - F
+            s |= box(X, Y, Z, (min(x, wx), y - 1.2, F - 0.01, max(x, wx), y + 1.2, F - 0.01 + rh))
+            s |= box(X, Y, Z, (x - 1.2, min(y, wy), F - 0.01, x + 1.2, max(y, wy), F - 0.01 + rh))
+            s &= ~cyl_z(X, Y, Z, x, y, A.ENC_PILOT_D / 2, F - 0.1, ZS + 0.3)
+        # USB-C
+        u, v = X - A.USB_X, Z - A.USB_Z
+        pk = rrect(X, Z, A.USB_X - A.USB_POCKET_W / 2, A.USB_Z - A.USB_POCKET_H / 2,
+                   A.USB_POCKET_W, A.USB_POCKET_H, A.USB_POCKET_R)
+        s &= ~(pk & (Y >= O - A.USB_POCKET_DEPTH))
+        s &= ~(stadium(u, v, A.USB_SLOT_W, A.USB_SLOT_H) & (Y >= O - W - 1.0))
+        plate, legs = A.usb_step_parts()
+        s |= box(X, Y, Z, plate)
+        for lg in legs:
+            s |= box(X, Y, Z, lg)
+        # key switch
+        s &= ~cyl_x(X, Y, Z, A.SWITCH_Y, A.SWITCH_Z, A.SWITCH_D / 2, O - W - 1.0, O + 1)
+        # speaker holder
+        s |= holder(X, Y, Z)
+        for rad, n in A.SPK_GRILLE:
+            for i in range(n):
+                a = 2 * np.pi * i / n
+                s &= ~cyl_x(X, Y, Z, A.SPK_Y + rad * np.cos(a), A.SPK_Z + rad * np.sin(a),
+                            A.SPK_GRILLE_D / 2, -1.0, W + 1.0)
+        # side vents
+        for y0, y1 in A.VENT_BLOCKS:
+            for y in A.vent_ys(y0, y1):
+                sl = stadium(Z - A.VENT_SLOT_Z, Y - y, A.VENT_SLOT_H, A.VENT_SLOT_W)
+                s &= ~(sl & ((X <= W + 1.0) | (X >= O - W - 1.0)))
+        # pry notches
+        for ny0 in (-1.0, O - 0.75):
+            s &= ~box(X, Y, Z, (A.CX - 8, ny0, ZS - 2.5, A.CX + 8, ny0 + 1.75, ZS + 1))
+        extra = getattr(A, "base_extra_vox", None)
+        if extra:
+            s = extra(s, X, Y, Z)
+        return s
+
+
+    def holder(X, Y, Z):
+        W, F = A.WALL, A.FLOOR
+        r_in = A.SPK_D / 2 + A.SPK_CLEAR
+        r_out = r_in + A.SPK_RING_T
+        x0h, hh = W - 0.5, A.SPK_RING_H + 0.5
+        rr = (Y - A.SPK_Y) ** 2 + (Z - A.SPK_Z) ** 2
+        inx = (X >= x0h) & (X <= x0h + hh)
+        h = inx & (rr <= r_out ** 2)
+        ly = r_out + A.SPK_LEG_PROUD
+        for yl0 in ((A.SPK_Y - ly, A.SPK_Y + ly - A.SPK_LEG_T) if getattr(A, "SPK_LEGS", True) else ()):
+            h |= box(X, Y, Z, (x0h, yl0, F - 0.5, x0h + hh, yl0 + A.SPK_LEG_T, A.SPK_Z + 3.0))
+        if A.spk_needs_tie():
+            h |= box(X, Y, Z, (W - 1.0, A.SPK_Y - A.SPK_TIE_W / 2, A.spk_tie_z0(),
+                               A.SPK_TIE_X1, A.SPK_Y + A.SPK_TIE_W / 2, A.RIB_TOP_IN_RIM))
+        h &= ~((X >= x0h) & (X <= x0h + hh + 1.0) & (rr <= r_in ** 2))
+        h &= ~((X >= W) & (X <= W + hh + 1.0) & (Z >= F) & (Z <= A.SPK_Z) &
+               (np.abs(Y - A.SPK_Y) <= (A.SPK_Z - Z) * A.spk_channel_tan()))
+        return h
+
+
+    def scan(tile=15.0, margin=1.6):
+        lo = np.array([-0.6, -0.6, -2.0])
+        hi = np.array([A.OUT + 0.6, A.OUT + 0.6, A.Z_SPLIT + 4.0])
+        thin_s, thin_v = [], []
+        xs = np.arange(lo[0], hi[0], tile)
+        ys = np.arange(lo[1], hi[1], tile)
+        zz = np.arange(lo[2], hi[2] + RES / 2, RES)
+        t0 = time.time()
+        for tx in xs:
+            for ty in ys:
+                gx = np.arange(tx - margin, tx + tile + margin, RES)
+                gy = np.arange(ty - margin, ty + tile + margin, RES)
+                X, Y, Z = np.meshgrid(gx.astype(np.float32), gy.astype(np.float32),
+                                      zz.astype(np.float32), indexing="ij")
+                S = base(X, Y, Z)
+                if not S.any():
+                    continue
+                m = int(round(margin / RES))
+                for solid, out in ((S, thin_s), (~S, thin_v)):
+                    core = ndi.distance_transform_edt(solid) * RES >= R
+                    dcore = ndi.distance_transform_edt(~core) * RES
+                    # plain 90-degree convex edges leave voxels up to ~0.57 mm from the core;
+                    # anything farther is genuinely thinner than 0.8 mm
+                    bad = solid & (dcore > R + 0.27)
+                    bad[:m], bad[-m:], bad[:, :m], bad[:, -m:] = False, False, False, False
+                    idx = np.argwhere(bad)
+                    if len(idx):
+                        out.append(np.c_[gx[idx[:, 0]], gy[idx[:, 1]], zz[idx[:, 2]],
+                                         dcore[bad]])
+            print("  x tile %.0f done (%.0fs)" % (tx, time.time() - t0), flush=True)
+        cat = lambda L: np.vstack(L) if L else np.zeros((0, 4))
+        return cat(thin_s), cat(thin_v)
+
+
+    def clusters(P, gap=0.5):
+        if not len(P):
+            return []
+        q = np.floor(P[:, :3] / gap).astype(int)
+        q -= q.min(0)
+        g = np.zeros(q.max(0) + 1, bool)
+        g[tuple(q.T)] = True
+        lab, n = ndi.label(g, np.ones((3, 3, 3)))
+        L = lab[tuple(q.T)]
+        out = []
+        for k in range(1, n + 1):
+            Q = P[L == k]
+            out.append((len(Q), Q[:, :3].min(0), Q[:, :3].max(0)))
+        return sorted(out, key=lambda c: -c[0])
+
+
+    ts, tv = scan()
+    bad = 0
+    for nm, P in (("solid thinner than 0.8 mm", ts), ("gap narrower than 0.8 mm", tv)):
+        cl = clusters(P)
+        bad += len(cl)
+        print("  %s: %d spot(s)" % (nm, len(cl)))
+        for n, a, b in cl[:40]:
+            print("    %6d vox  x %6.1f..%6.1f  y %6.1f..%6.1f  z %5.1f..%5.1f"
+                  % (n, a[0], b[0], a[1], b[1], a[2], b[2]))
+    return bad
+
+
+SCAN_RES = 0.125
+
+
+def scan_base():
+    return _scan_impl()
 
 
 # ============================================================================
@@ -879,14 +1473,30 @@ def build():
                   inset_in, inset_in, h + 1.0, z0 - 0.5))
 
     rail_foot = None
-    for i in range(4):          # 4 x 0.5 mm steps = a 45 deg underside, prints unsupported
-        s = ring_solid(WALL - RAIL_GAP, WALL + 0.5 * (i + 1), 0.5, Z_SPLIT - 2.0 + 0.5 * i)
+    # 2 x 1.0 mm steps = a 45 deg underside (v13 used 0.5 mm steps: below JLC's 0.8 mm
+    # minimum feature size)
+    for i in range(RAIL_FOOT_STEPS):
+        st = 2.0 / RAIL_FOOT_STEPS
+        s = ring_solid(WALL - RAIL_GAP, WALL + st * (i + 1), st, RAIL_FOOT_Z0 + st * i)
         rail_foot = s if rail_foot is None else rail_foot.union(s)
     rail_top = ring_solid(WALL, WALL + RAIL_T, RAIL_H + 0.1, Z_SPLIT - 0.1)
     base = base.union(rail_foot).union(rail_top)
     lid = lid.cut(ring_solid(WALL - RAIL_GAP, WALL, RAIL_H + 0.5, Z_SPLIT - 0.1))
 
     checkpoint("joint + rail")
+
+    # ---- v14: rib grid on the floor + ribs tying the base walls to the floor
+    def box6(b):
+        x0, y0, z0, x1, y1, z1 = b
+        return cq.Workplane("XY").box(x1 - x0, y1 - y0, z1 - z0, centered=False) \
+                 .translate((x0, y0, z0))
+
+    for b in floor_rib_boxes():
+        base = base.union(box6(b))
+    for _w, _p, b in wall_rib_boxes():
+        base = base.union(box6(b))
+
+    checkpoint("floor + wall ribs")
 
     # ---- PCB posts ------------------------------------------------------
     def pcb2box(p):
@@ -896,7 +1506,7 @@ def build():
         x, y = pcb2box(p)
         base = base.union(cq.Workplane("XY").workplane(offset=FLOOR - 0.01)
                           .center(x, y).circle(3.5).extrude(STANDOFF_H + 0.01))
-    for p in HOLES:
+    for p in HOLES + [DUMMY]:           # v14: the dummy post is cored too (no 7 mm lump)
         x, y = pcb2box(p)
         base = base.cut(cq.Workplane("XY").workplane(offset=FLOOR + 1.0)
                         .center(x, y).circle(1.3).extrude(STANDOFF_H + 2))
@@ -906,10 +1516,10 @@ def build():
     # ---- corner screw columns ------------------------------------------
     for x, y in ENC_SCREWS:
         base = base.union(cq.Workplane("XY").workplane(offset=FLOOR - 0.01)
-                          .center(x, y).circle(SCREW_BOSS_R).extrude(Z_SPLIT - FLOOR + 0.02))
+                          .center(x, y).circle(SCREW_BOSS_R).extrude(Z_SPLIT - FLOOR + 0.01))
         wx = WALL if x < CX else OUT - WALL
         wy = WALL if y < CX else OUT - WALL
-        rh = Z_SPLIT - 2.5 - FLOOR
+        rh = CORNER_RIB_TOP - FLOOR      # v14: runs up into the rail foot (v13: 0.5 mm gap)
         base = base.union(cq.Workplane("XY").box(abs(x - wx), 2.4, rh, centered=False)
                           .translate((min(x, wx), y - 1.2, FLOOR - 0.01)))
         base = base.union(cq.Workplane("XY").box(2.4, abs(y - wy), rh, centered=False)
@@ -950,11 +1560,13 @@ def build():
     checkpoint("USB-C opening")
 
     # ---- step for the USB-C power module ----------------------------------
-    base = base.union(cq.Workplane("XY")
-                      .box(USB_SHELF_W, USB_SHELF_D + 0.3, USB_SHELF_TOP - FLOOR + 0.01,
-                           centered=False)
-                      .translate((USB_X - USB_SHELF_W / 2.0, OUT - WALL - USB_SHELF_D,
-                                  FLOOR - 0.01)))
+    # v14: 2 mm top plate on 3 legs (built as one solid, joined in one union),
+    # bays open toward the PCB so resin drains and nothing is thicker than the wall
+    plate, legs = usb_step_parts()
+    step = box6(plate)
+    for lg in legs:
+        step = step.union(box6(lg))
+    base = base.union(step)
 
     checkpoint("USB-C step")
 
@@ -975,12 +1587,32 @@ def build():
     hold_pl = cq.Plane(origin=(x0h, SPK_Y, SPK_Z), xDir=(0, 1, 0), normal=(1, 0, 0))
     ring = cq.Workplane(hold_pl).circle(r_out).circle(r_in).extrude(hh)        # full round ring
     bore = cq.Workplane(hold_pl).circle(r_in).extrude(hh + 1.0)
-    skirt = (cq.Workplane("XY").box(hh, 2 * r_out, SPK_Z - FLOOR + 0.5, centered=False)
-             .translate((x0h, SPK_Y - r_out, FLOOR - 0.5)).cut(bore))           # solid lower part
-    holder = ring.union(skirt)
+    # v14: two 2.5 mm legs, one each side - no solid lower part.  Their outer faces
+    # stand 0.3 mm proud of the ring and their tops 3 mm above its equator, so no face
+    # is ever tangent to the ring cylinder (tangent faces break OpenCascade booleans).
+    holder = ring
+    ly = r_out + SPK_LEG_PROUD
+    for yl0 in ((SPK_Y - ly, SPK_Y + ly - SPK_LEG_T) if SPK_LEGS else ()):   # v15: no legs
+        holder = holder.union(cq.Workplane("XY")
+                              .box(hh, SPK_LEG_T, SPK_Z + 3.0 - FLOOR + 0.5, centered=False)
+                              .translate((x0h, yl0, FLOOR - 0.5)))
+    # v14: tie the top of the ring up into the rail foot (v13 left a 0.2 mm gap there).
+    # It starts inside the wall and stops 0.3 under the split, inside the foot's top step.
+    if spk_needs_tie():
+        holder = holder.union(cq.Workplane("XY")
+                              .box(SPK_TIE_X1 - (WALL - 1.0), SPK_TIE_W,
+                                   RIB_TOP_IN_RIM - spk_tie_z0(), centered=False)
+                              .translate((WALL - 1.0, SPK_Y - SPK_TIE_W / 2.0, spk_tie_z0())))
+    holder = holder.cut(bore)
     # lead channel under the speaker (cut from the holder only, never from the floor)
-    holder = holder.cut(cq.Workplane("XY").box(hh + 1.0, 8.0, 4.0 + 1.0, centered=False)
-                        .translate((WALL, SPK_Y - 4.0, FLOOR)))
+    # v15: a V-shaped cut aimed at the ring centre, so each ring end is a RADIAL face,
+    # square to both ring surfaces (a flat vertical cut left a 63 deg knife edge).  It is
+    # wide enough that the ring ends stand SPK_END_CLEAR above the floor (no crevice).
+    # The part of the ring below the floor top stays inside the floor.
+    vw = (SPK_Z - FLOOR) * spk_channel_tan()
+    holder = holder.cut(cq.Workplane("YZ").workplane(offset=WALL)
+                        .polyline([(SPK_Y, SPK_Z), (SPK_Y + vw, FLOOR), (SPK_Y - vw, FLOOR)])
+                        .close().extrude(hh + 1.0))
     hs = holder.solids().vals()
     if len(hs) != 1 or not hs[0].isValid():
         raise RuntimeError("speaker holder is %d solid(s), valid=%s - not joined"
@@ -1064,6 +1696,15 @@ def build():
     lid = lid.cut(cq.Workplane("XY").workplane(offset=HB)
                   .center(SERVO_CX, SERVO_CY).rect(SRV_POCKET_X, SRV_POCKET_Y)
                   .extrude(SERVO_LEDGE_H + 2.0))
+    # v14: hollow the two 8 mm end walls into 2.5 mm shells.  The cores are cut up
+    # from inside the lid through the roof, so they open into the lid and drain; the
+    # top 2.5 mm stays solid as the rest for the ears.
+    z_cav0 = HB - WALL - 1.0
+    for x0c, y0c, x1c, y1c in servo_cavities():
+        lid = lid.cut(cq.Workplane("XY").box(x1c - x0c, y1c - y0c,
+                                             SRV_LEDGE_Z - SERVO_CAP_T - z_cav0,
+                                             centered=False).translate((x0c, y0c, z_cav0)))
+
     # guide ribs on the two long pocket walls
     def rib(fx, fy, ix, iy):
         ax, ay = -iy, ix
@@ -1097,6 +1738,14 @@ def build():
                           .slot2D(ROOF_VENT_LEN, VENT_SLOT_W, 90).extrude(WALL + 2.0))
 
     checkpoint("roof vents")
+
+    # ---- v14: rib frame under the flat roof ------------------------------
+    for b in roof_rib_boxes():
+        x0, y0, z0, x1, y1, z1 = b
+        lid = lid.union(cq.Workplane("XY").box(x1 - x0, y1 - y0, z1 - z0, centered=False)
+                        .translate((x0, y0, z0)))
+
+    checkpoint("roof ribs")
 
     # ---- pry notches in the base top edge -------------------------------
     for ny0 in (-1.0, OUT - 0.75):
@@ -1303,13 +1952,13 @@ def build_parts_preview():
 # ============================================================================
 def export(base, lid, tft=None):
     """Writes these files:
-         1_enclosure_base_plus_lid_v13  - the closed box WITH the TFT, key switch, speaker,
+         1_enclosure_base_plus_lid_v15  - the closed box WITH the TFT, key switch, speaker,
                                           USB-C module and main PCB inside
                                           in place (preview only - do not order it)
-         2_enclosure_lid_v13            - the lid, lying open side down as printed
-         3_enclosure_base_v13           - the base
+         2_enclosure_lid_v15            - the lid, lying open side down as printed
+         3_enclosure_base_v15           - the base
        each as STEP and STL, plus
-         4_preview_in_colour_v13.step   - the same as file 1, with colours (open it in
+         4_preview_in_colour_v15.step   - the same as file 1, with colours (open it in
                                           Fusion 360 / FreeCAD / an online STEP viewer)"""
     import os
     import cadquery as cq
@@ -1323,9 +1972,9 @@ def export(base, lid, tft=None):
     both = cq.Workplane("XY").newObject(base.solids().vals() + lid.solids().vals() + extra)
 
     written = []
-    for name, shape in (("1_enclosure_base_plus_lid_v13", both),
-                        ("2_enclosure_lid_v13", lid_flat),
-                        ("3_enclosure_base_v13", base)):
+    for name, shape in (("1_enclosure_base_plus_lid_v15", both),
+                        ("2_enclosure_lid_v15", lid_flat),
+                        ("3_enclosure_base_v15", base)):
         for ext, kw in (("step", {}), ("stl", dict(tolerance=0.01, angularTolerance=0.05))):
             p = os.path.join(d, "%s.%s" % (name, ext))
             cq.exporters.export(shape, p, **kw)
@@ -1333,12 +1982,12 @@ def export(base, lid, tft=None):
 
     if tft:
         try:
-            assy = cq.Assembly(name="enclosure_v13")
+            assy = cq.Assembly(name="enclosure_v15")
             assy.add(base, name="base", color=cq.Color(0.92, 0.92, 0.90, 1.0))
             assy.add(lid, name="lid", color=cq.Color(0.80, 0.82, 0.85, 1.0))
             for nm, wp, rgba in tft:
                 assy.add(wp, name=nm, color=cq.Color(*rgba))
-            p = os.path.join(d, "4_preview_in_colour_v13.step")
+            p = os.path.join(d, "4_preview_in_colour_v15.step")
             if hasattr(assy, "export"):
                 assy.export(p)
             else:
@@ -1368,6 +2017,9 @@ if __name__ == "__main__":
         sys.exit(1)
     if "--check" in sys.argv:
         sys.exit(0)
+    if "--scan" in sys.argv:
+        print("\nscanning the base for walls / gaps under 0.8 mm ...")
+        sys.exit(1 if scan_base() else 0)
     print("\nbuilding ...")
     b, l = build()
     t = []
