@@ -5,8 +5,20 @@ import { About } from './pages/about/about';
 import { NotFound } from './pages/not-found/not-found';
 
 export const routes: Routes = [
-  { path: '', component: Home, title: 'Pizza Shop' },
-  { path: 'menu', component: Menu, title: 'Menu | Pizza Shop' },
-  { path: 'about', component: About, title: 'About | Pizza Shop' },
-  { path: '**', component: NotFound, title: 'Page not found' }
+  { 
+    path: '', component: Home, 
+    title: 'Pizza Shop' 
+  },
+  { 
+    path: 'menu', component: Menu, 
+    title: 'Menu | Pizza Shop' 
+  },
+  { 
+    path: 'about', component: About, 
+    title: 'About | Pizza Shop' 
+  },
+  { 
+    path: '**', component: NotFound, 
+    title: 'Page not found' 
+  }
 ];

