@@ -1,1 +1,17 @@
-<p>shop-list works!</p>
+<section class="shop-list">
+  <h2>Products</h2>
+
+  <ul class="products">
+    @for (product of products; track product.id) {
+      <li class="card">
+        <span class="name">{{ product.name }}</span>
+        <span class="price">{{ product.price | currency: 'ILS' }}</span>
+        <button type="button" class="add" (click)="addToCart(product)">Add to cart</button>
+      </li>
+    }
+  </ul>
+
+  <p class="cart-info">
+    Items in cart: <strong>{{ cart.cartItems().length }}</strong>
+  </p>
+</section>

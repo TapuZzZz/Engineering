@@ -1,4 +1,34 @@
-<section>
-  <h1>Checkout</h1>
-  
+<section class="checkout">
+  <h2>Checkout</h2>
+
+  @if (orderPlaced()) {
+    <p class="message success">Thank you! Your order was placed.</p>
+  } @else if (cart.cartItems().length === 0) {
+    <p class="message">Your cart is empty.</p>
+  } @else {
+    <ul class="items">
+      @for (item of cart.cartItems(); track item.product.id) {
+        <li class="item">
+          <span class="name">{{ item.product.name }}</span>
+
+          <div class="quantity">
+            <button type="button" (click)="cart.decrease(item.product.id)">-</button>
+            <span>{{ item.quantity }}</span>
+            <button type="button" (click)="cart.increase(item.product.id)">+</button>
+          </div>
+
+          <span class="price">{{ item.product.price * item.quantity | currency: 'ILS' }}</span>
+
+          <button type="button" class="remove" (click)="cart.remove(item.product.id)">✕</button>
+        </li>
+      }
+    </ul>
+
+    <div class="summary">
+      <span>Total</span>
+      <span class="total">{{ cart.total() | currency: 'ILS' }}</span>
+    </div>
+
+    <button type="button" class="order" (click)="placeOrder()">Place order</button>
+  }
 </section>
