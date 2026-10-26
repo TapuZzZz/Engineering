@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "counter-service": {
+    "service-task": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "counter-service:build:production"
+              "buildTarget": "service-task:build:production"
             },
             "development": {
-              "buildTarget": "counter-service:build:development"
+              "buildTarget": "service-task:build:development"
             }
           },
           "defaultConfiguration": "development"

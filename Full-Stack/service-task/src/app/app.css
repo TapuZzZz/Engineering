@@ -1,0 +1,31 @@
+h1 {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 10vh;
+    width: 30vw;
+    margin: 0 auto;
+    background-color: #f0f0f0;
+    border-radius: 15px;
+}
+
+header {
+    font-family: Arial, sans-serif;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #d87307;
+    height: 5vh;
+    width: 15vw;
+    margin: 0 auto;
+    border-radius: 5px;
+}
+
+nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
