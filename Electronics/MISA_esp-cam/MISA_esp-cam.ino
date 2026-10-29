@@ -5,10 +5,10 @@
 // ==========================================
 #define SERIAL_BAUD        115200
 #define CAM_XCLK_FREQ_HZ   20000000
-#define CAM_JPEG_QUALITY   10   // lower = better quality (10-63)
-#define CAM_FB_COUNT       2    // capture next frame while sending current
-#define TARGET_FPS         10
-#define FRAME_INTERVAL_MS  (1000 / TARGET_FPS)  // 100 ms
+#define CAM_JPEG_QUALITY   10
+#define CAM_FB_COUNT       2
+#define TARGET_FPS         20
+#define FRAME_INTERVAL_MS  (1000 / TARGET_FPS)
 
 // ==========================================
 // Camera Pins
