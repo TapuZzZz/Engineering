@@ -7,16 +7,15 @@ struct WifiNetwork {
   const char* ssid;
   const char* pass;
 };
-
-// Tried in this order
 const WifiNetwork NETWORKS[] = {
   { "TP-Link- Salon", "03032007" },
-  { "Amal-Student",   "Amal1@st" },
+  { "Amal-Student",   "Amal1@st" }
 };
 const int NETWORK_COUNT = sizeof(NETWORKS) / sizeof(NETWORKS[0]);
 
 const char* HOSTNAME = "esp-cam";
-const char* AP_SSID  = "ESP-Cam";   // own network if all WiFi fails
+
+const char* AP_SSID  = "ESP-Cam";
 const char* AP_PASS  = "03032007";
 
 #define WIFI_TIMEOUT_MS 10000
@@ -86,11 +85,11 @@ void setImageSettings(camera_config_t& config) {
   config.ledc_timer   = LEDC_TIMER_0;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_HVGA;      // 480x320
-  config.jpeg_quality = 10;                  // lower = better quality (10-63)
-  config.fb_count     = 2;                   // capture next frame while sending current
+  config.frame_size   = FRAMESIZE_HVGA;
+  config.jpeg_quality = 10;
+  config.fb_count     = 2;
   config.fb_location  = CAMERA_FB_IN_PSRAM;
-  config.grab_mode    = CAMERA_GRAB_LATEST;  // always send the newest frame
+  config.grab_mode    = CAMERA_GRAB_LATEST;
 }
 
 camera_config_t buildCameraConfig() {
@@ -130,7 +129,7 @@ void applyCorrectionSettings(sensor_t* s) {
 }
 
 void applySharpness(sensor_t* s) {
-  if (s->id.PID != OV5640_PID) return;  // OV2640 has no sharpness control
+  if (s->id.PID != OV5640_PID) return;  // others has no sharpness control
   s->set_sharpness(s, 1);
 }
 
@@ -154,7 +153,7 @@ void shutdownIfOverheated() {
   Serial.printf("Overheat %.1f C - shutting down\n", temp);
   Serial.flush();
   esp_camera_deinit();
-  esp_deep_sleep_start();  // no wake source = stays off until RESET
+  esp_deep_sleep_start();  // stays off until RESET
 }
 
 // ===================== WiFi =====================
@@ -296,5 +295,5 @@ void loop() {
   announceIfDue();
   WiFiClient client = server.accept();
   if (client) handleClient(client);
-  else delay(10);  // idle: let the CPU rest
+  else delay(10);
 }

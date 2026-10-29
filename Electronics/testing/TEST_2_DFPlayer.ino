@@ -1,13 +1,7 @@
 // =================================================================
 //  TEST 2 - DFPLAYER + SPEAKER ONLY
-//  Standalone, isolated test. Nothing else on this board is touched.
 //
 //  WIRING: DFPlayer RX = GPIO13, DFPlayer TX = GPIO14
-//
-//  WHAT IT DOES: initializes the DFPlayer and plays track 1 (needs
-//  a microSD card with 0001.mp3 in the root or /mp3 folder). Prints
-//  clear OK/FAILED status to Serial. Type any track number + Enter
-//  in Serial Monitor (115200 baud) to replay/test a different track.
 // =================================================================
 
 #include <HardwareSerial.h>

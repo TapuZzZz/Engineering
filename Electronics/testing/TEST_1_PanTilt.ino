@@ -1,6 +1,9 @@
 // =================================================================
-//  TEST 1 - PAN/TILT SERVOS (CALIBRATED SAFE BOUNDS)
-//  Pan: 0-180 | Tilt: 45-150 (Calibrated for MG996R physical limit)
+//  TEST 1 - PAN/TILT SERVOS ONLY
+//
+//  Pan: 20-160 | Tilt: 45-145
+//
+// WIRING: Pan PWM = 4, Tilt PWM = 5
 // =================================================================
 
 #include <ESP32Servo.h>
@@ -8,13 +11,13 @@
 #define SERVO_PAN_PIN  4
 #define SERVO_TILT_PIN 5
 
-#define TILT_MIN_SAFE 45
-#define TILT_MAX_SAFE 150  
-#define TILT_START    90
-
 #define PAN_MIN_SAFE  0
 #define PAN_MAX_SAFE  180
 #define PAN_START     90
+
+#define TILT_MIN_SAFE 45
+#define TILT_MAX_SAFE 145 
+#define TILT_START    90
 
 Servo panServo;
 Servo tiltServo;

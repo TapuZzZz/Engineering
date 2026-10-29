@@ -1,14 +1,7 @@
 // =================================================================
 //  TEST 4 - LIDAR (TF-LUNA) ONLY
-//  Standalone, isolated test. Nothing else on this board is touched.
 //
 //  WIRING: Luna RX = GPIO17, Luna TX = GPIO18
-//
-//  WHAT IT DOES: continuously reads distance frames from the TF-Luna
-//  and prints the distance in cm to Serial as soon as each valid
-//  frame arrives. Point it at something and move your hand toward/
-//  away from it - the printed numbers should change accordingly.
-//  If nothing ever prints, check RX/TX wiring direction and power.
 // =================================================================
 
 #include <HardwareSerial.h>

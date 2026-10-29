@@ -1,16 +1,7 @@
 // =================================================================
 //  TEST 5 - TFT SCREEN (ST7735) ONLY
-//  Standalone, isolated test. Nothing else on this board is touched.
 //
-//  WIRING: CS = GPIO11, RST = GPIO12, DC = GPIO9, MOSI = GPIO10,
-//          SCK = GPIO15
-//
-//  WHAT IT DOES: initializes the screen, fills it with a sequence
-//  of solid colors (so you can check the whole panel lights up
-//  correctly with no dead pixels/lines), then draws a border and
-//  text. Watch for the offset artifact seen on the previous board
-//  (a noisy/misaligned edge) - if present, the col/row offset
-//  constants below need re-calibration for THIS physical screen.
+//  WIRING: CS = GPIO11, RST = GPIO12, DC = GPIO9, MOSI = GPIO10, SCK = GPIO15
 // =================================================================
 
 #include <SPI.h>
