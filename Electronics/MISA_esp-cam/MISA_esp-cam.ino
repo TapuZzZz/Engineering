@@ -7,6 +7,8 @@
 #define CAM_XCLK_FREQ_HZ   20000000
 #define CAM_JPEG_QUALITY   10   // lower = better quality (10-63)
 #define CAM_FB_COUNT       2    // capture next frame while sending current
+#define TARGET_FPS         10
+#define FRAME_INTERVAL_MS  (1000 / TARGET_FPS)  // 100 ms
 
 // ==========================================
 // Camera Pins
@@ -58,7 +60,7 @@ void setImageSettings(camera_config_t& config) {
   config.ledc_timer   = LEDC_TIMER_0;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.frame_size   = FRAMESIZE_HVGA;
+  config.frame_size   = FRAMESIZE_VGA;
   config.jpeg_quality = CAM_JPEG_QUALITY;
   config.fb_count     = CAM_FB_COUNT;
   config.fb_location  = CAMERA_FB_IN_PSRAM;
@@ -84,24 +86,52 @@ void applySensorSettings() {
   }
   Serial.printf("Sensor PID: 0x%x\n", sensor->id.PID);
 
-  sensor->set_saturation(sensor, 2);  // stronger colors
-  sensor->set_contrast(sensor, 1);    // slightly more contrast
-  sensor->set_whitebal(sensor, 1);    // auto white balance
+  sensor->set_saturation(sensor, 0);
+  sensor->set_contrast(sensor, 0);
+  sensor->set_whitebal(sensor, 1);
   sensor->set_awb_gain(sensor, 1);
-  sensor->set_wb_mode(sensor, 0);     // 0 = auto
+  sensor->set_wb_mode(sensor, 0);
+  sensor->set_gainceiling(sensor, GAINCEILING_4X);
 
-  sensor->set_exposure_ctrl(sensor, 1);  // auto exposure
-  sensor->set_aec2(sensor, 1);           // smarter auto exposure
-  sensor->set_gain_ctrl(sensor, 1);      // auto gain
+  sensor->set_exposure_ctrl(sensor, 1);
+  sensor->set_aec2(sensor, 1);
+  sensor->set_gain_ctrl(sensor, 1);
 
-  sensor->set_bpc(sensor, 1);      // fix black (dead) pixels
-  sensor->set_wpc(sensor, 1);      // fix white (hot) pixels
-  sensor->set_raw_gma(sensor, 1);  // gamma correction
-  sensor->set_lenc(sensor, 1);     // lens correction (darker corners)
-  sensor->set_dcw(sensor, 1);      // clean downscaling
+  sensor->set_bpc(sensor, 1);
+  sensor->set_wpc(sensor, 1);
+  sensor->set_raw_gma(sensor, 1);
+  sensor->set_lenc(sensor, 1);
+  sensor->set_dcw(sensor, 1);
 
-  sensor->set_vflip(sensor, 1);    // flip top <-> bottom
-  sensor->set_hmirror(sensor, 1);  // + mirror = rotated 180°
+  sensor->set_vflip(sensor, 1);
+  sensor->set_hmirror(sensor, 1);
+}
+
+// ==========================================
+// Capture
+// ==========================================
+bool isTimeForNextFrame() {
+  static unsigned long lastFrameMs = 0;
+  unsigned long nowMs = millis();
+  if (nowMs - lastFrameMs < FRAME_INTERVAL_MS) return false;
+  lastFrameMs = nowMs;
+  return true;
+}
+
+void printFrameInfo(const camera_fb_t* frame) {
+  Serial.printf("[%lu ms] %ux%u, %u bytes, %.1f C\n",
+                millis(), frame->width, frame->height, frame->len,
+                temperatureRead());
+}
+
+void captureFrame() {
+  camera_fb_t* frame = esp_camera_fb_get();
+  if (frame == nullptr) {
+    Serial.println("Capture failed");
+    return;
+  }
+  printFrameInfo(frame);
+  esp_camera_fb_return(frame);
 }
 
 // ==========================================
@@ -120,5 +150,6 @@ void setup() {
 }
 
 void loop() {
-  delay(1);
+  if (!isTimeForNextFrame()) return;
+  captureFrame();
 }
