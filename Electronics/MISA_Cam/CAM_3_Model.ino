@@ -1,3 +1,7 @@
+// ##########################################
+//                 CAMERA
+// ##########################################
+
 // ==========================================
 // ICamera - interface: what every camera must do
 // ==========================================
@@ -87,22 +91,33 @@ private:
 };
 
 // ==========================================
-// Objects
+// FpsCounter - counts frames and prints FPS every second
 // ==========================================
-CameraConfig cameraConfig;
-Esp32Camera  esp32Camera(cameraConfig);
-ICamera&     camera = esp32Camera;
+class FpsCounter {
+public:
+  FpsCounter() : _frames(0), _lastTime(0) {}
 
-// ==========================================
-// Called from MISA_Cam.ino
-// ==========================================
-void cameraSetup() {
-  if (camera.begin()) {
-    Serial.println("Camera init OK");
-  } else {
-    Serial.println("Camera init FAILED");
+  void start() {
+    _frames = 0;
+    _lastTime = millis();
   }
-}
+
+  void tick() {
+    _frames++;
+    if (millis() - _lastTime >= 1000) {
+      Serial.printf("Stream FPS: %d\n", _frames);
+      start();
+    }
+  }
+
+private:
+  int _frames;
+  unsigned long _lastTime;
+};
+
+// ##########################################
+//                 NETWORK
+// ##########################################
 
 // ==========================================
 // INetwork - interface: what every network must do
@@ -113,6 +128,7 @@ public:
   virtual bool connect() = 0;
   virtual bool isConnected() = 0;
   virtual String localIp() = 0;
+  virtual int signalStrength() = 0;
 };
 
 // ==========================================
@@ -127,6 +143,7 @@ public:
     WiFi.mode(WIFI_STA);
     for (int i = 0; i < _count; i++) {
       if (tryNetwork(_networks[i])) {
+        disablePowerSave();
         return true;
       }
     }
@@ -141,10 +158,15 @@ public:
     return WiFi.localIP().toString();
   }
 
+  int signalStrength() override {
+    return WiFi.RSSI();
+  }
+
 private:
   bool tryNetwork(const WifiNetwork& network) {
     Serial.printf("Connecting to %s...\n", network.ssid);
     WiFi.begin(network.ssid, network.password);
+    limitTxPower();
     return waitForConnection();
   }
 
@@ -160,8 +182,47 @@ private:
     return false;
   }
 
+  void limitTxPower() {
+    WiFi.setTxPower(WIFI_TX_POWER);
+  }
+
+  void disablePowerSave() {
+    WiFi.setSleep(false);
+  }
+
   const WifiNetwork* _networks;
   int _count;
+};
+
+// ==========================================
+// SignalReporter - prints WiFi strength every few seconds
+// ==========================================
+class SignalReporter {
+public:
+  SignalReporter(INetwork& network) : _network(network), _lastTime(0) {}
+
+  void update() {
+    if (millis() - _lastTime >= WIFI_REPORT_INTERVAL_MS) {
+      _lastTime = millis();
+      report();
+    }
+  }
+
+private:
+  void report() {
+    int rssi = _network.signalStrength();
+    Serial.printf("WiFi RSSI: %d dBm (%s)\n", rssi, qualityLabel(rssi));
+  }
+
+  const char* qualityLabel(int rssi) {
+    if (rssi >= -60) return "Excellent";
+    if (rssi >= -70) return "Good";
+    if (rssi >= -80) return "Weak";
+    return "Bad";
+  }
+
+  INetwork& _network;
+  unsigned long _lastTime;
 };
 
 // ==========================================
@@ -174,16 +235,29 @@ public:
   }
 };
 
-// ==========================================
-// Objects
-// ==========================================
-WifiConnector wifiConnector(WIFI_NETWORKS, WIFI_NETWORKS_COUNT);
-INetwork&     network = wifiConnector;
-MdnsService   mdns;
+// ##########################################
+//                 OBJECTS
+// ##########################################
+CameraConfig   cameraConfig;
+Esp32Camera    esp32Camera(cameraConfig);
+ICamera&       camera = esp32Camera;
 
-// ==========================================
-// Called from MISA_Cam.ino
-// ==========================================
+WifiConnector  wifiConnector(WIFI_NETWORKS, WIFI_NETWORKS_COUNT);
+INetwork&      network = wifiConnector;
+SignalReporter signalReporter(network);
+MdnsService    mdns;
+
+// ##########################################
+//          CALLED FROM MISA_Cam.ino
+// ##########################################
+void cameraSetup() {
+  if (camera.begin()) {
+    Serial.println("Camera init OK");
+  } else {
+    Serial.println("Camera init FAILED");
+  }
+}
+
 void networkSetup() {
   if (network.connect()) {
     Serial.println("WiFi OK, IP: " + network.localIp());
@@ -198,4 +272,8 @@ void mdnsSetup() {
   } else {
     Serial.println("mDNS FAILED");
   }
+}
+
+void networkMonitor() {
+  signalReporter.update();
 }

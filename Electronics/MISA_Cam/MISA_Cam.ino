@@ -13,5 +13,6 @@ void setup() {
 }
 
 void loop() {
-  delay(100);
+  networkMonitor();
+  delay(10);
 }

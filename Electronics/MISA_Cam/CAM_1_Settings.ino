@@ -2,12 +2,17 @@
 // Settings
 // ==========================================
 #define SERIAL_BAUD        115200
-#define CAM_XCLK_FREQ_HZ   20000000
-#define CAM_JPEG_QUALITY   10
+#define CAM_XCLK_FREQ_HZ   10000000  // 10 MHz - less noise for WiFi
+#define CAM_JPEG_QUALITY   12        // higher number = smaller frames = faster
 #define CAM_FB_COUNT       2
 #define CAM_FRAME_SIZE     FRAMESIZE_VGA
 
+// ==========================================
+// Network Settings
+// ==========================================
 #define WIFI_CONNECT_TIMEOUT_MS  10000
+#define WIFI_REPORT_INTERVAL_MS  5000
+#define WIFI_TX_POWER            WIFI_POWER_8_5dBm   // lower = more stable on weak antennas
 #define MDNS_HOSTNAME            "misa-cam"
 #define WEB_SERVER_PORT          80
 
@@ -34,13 +39,18 @@
 #define CAM_PIN_RGB     48
 
 // ==========================================
-// Serial
+// Types
 // ==========================================
-void serialSetup() {
-  Serial.begin(SERIAL_BAUD);
-}
-
 struct WifiNetwork {
   const char* ssid;
   const char* password;
 };
+
+// ==========================================
+// Serial
+// ==========================================
+void serialSetup() {
+  Serial.begin(SERIAL_BAUD);
+  Serial.printf("Reset reason: %d\n", esp_reset_reason());
+  Serial.printf("PSRAM found: %s\n", psramFound() ? "YES" : "NO");
+}
