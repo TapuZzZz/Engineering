@@ -9,19 +9,14 @@ public class Product
         Price = price;
     }
 
-    private string GetName()
+    public string GetName()
     {
-        return this.Name;
-    }
-
-    public string GetName2()
-    {
-        return GetName();
+        return Name;
     }
 
     public double GetPrice()
     {
-        return this.Price;
+        return Price;
     }
 
     public void SetPrice(double price)
