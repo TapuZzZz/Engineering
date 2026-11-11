@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 SOURCE = "http://MISA-CAM.local/stream"
 MODEL_PATH = "yolo26n.pt"
-TARGET_CLASS = "teddy bear"
+TARGET_CLASS = "bottle"
 
 ACTIVATOR_HOST = "ESP-ACTIVATOR.local"
 ACTIVATOR_PORT = 5006
