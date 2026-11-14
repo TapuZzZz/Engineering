@@ -1,3 +1,5 @@
+#pragma once
+
 camera_config_t buildCameraConfig() {
   camera_config_t config = {};
 
@@ -42,7 +44,7 @@ bool initCameraConfig() {
   esp_err_t err = esp_camera_init(&config);
 
   if (err != ESP_OK) {
-    Serial.printf("[!] Camera error: 0x%x (%s)\n", err, esp_err_to_name(err));
+    Serial.printf("[initCameraConfig] Camera error: 0x%x (%s)\n", err, esp_err_to_name(err));
   }
 
   return err == ESP_OK;
@@ -50,26 +52,31 @@ bool initCameraConfig() {
 
 
 bool initWiFiConnection() {
-  for (const WifiNetwork& network : NETWORKS) {
-    WiFi.begin(network.ssid, network.pass);
+  for (int i = 0; i < NETWORKS_COUNT && WiFi.status() != WL_CONNECTED; i++) {
+    WiFi.disconnect();
+    Serial.printf("[initWiFiConnection] Trying: %s\n", NETWORKS[i].ssid);
+    WiFi.begin(NETWORKS[i].ssid, NETWORKS[i].pass);
     unsigned long startMs = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - startMs < WIFI_TIMEOUT_MS) 
+
+    while (WiFi.status() != WL_CONNECTED && millis() - startMs < WIFI_TIMEOUT_MS) {
       delay(WIFI_RETRY_MS);
-    if (WiFi.status() == WL_CONNECTED) break;
+    }
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[!] WiFi connection failed!");
-    return;
+    Serial.println("[initWiFiConnection] WiFi connection failed!");
+    return false;
   }
-
+  
   WiFi.setSleep(false);
 
   Serial.print("[+] Camera IP is: ");
   Serial.println(WiFi.localIP());
 
-  if (MDNS.begin(HOST_NAME)) {
-    Serial.printf("[+] MDNS Name: %s.local\n", HOST_NAME);
+  if (!MDNS.begin(HOST_NAME)) {
+    Serial.println("[initWiFiConnection] MDNS start failed!");
+    return false;
   }
-
+  Serial.printf("[+] MDNS Name: %s.local\n", HOST_NAME);
+  return true;
 }

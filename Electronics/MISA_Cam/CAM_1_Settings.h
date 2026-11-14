@@ -1,3 +1,5 @@
+#pragma once
+
 struct WifiNetwork { 
   const char* ssid;
   const char* pass;
@@ -11,16 +13,22 @@ const WifiNetwork NETWORKS[] = {
 };
 
 
+const int NETWORKS_COUNT = sizeof(NETWORKS) / sizeof(NETWORKS[0]);
+
+
 const char* HOST_NAME = "MISA-CAM";
-const int STREAM_PORT = 80;
-const int TARGET_FPS = 20;
-
-
+const char* PC_HOST_NAME = "Artyoms-MacBook";
+const unsigned long MDNS_TIMEOUT_MS = 2000;
 const unsigned long WIFI_TIMEOUT_MS = 10000;
 const unsigned long WIFI_RETRY_MS = 500;
 
 
+const int TARGET_FPS = 20;
+
+
 const int BAUD_RATE = 115200;
+const int SERIAL_STARTUP_DELAY_MS = 1000;
+const int HALT_DELAY_MS = 1000;
 
 
 const int XCLK_GPIO = 15;
