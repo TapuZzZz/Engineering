@@ -15,7 +15,8 @@ const WifiNetwork NETWORKS[] = {
 
 const int NETWORKS_COUNT = sizeof(NETWORKS) / sizeof(NETWORKS[0]);
 
-
+const uint16_t PC_UDP_PORT = 5005;
+const size_t MAX_CHUNK_SIZE = 1400;
 const char* HOST_NAME = "MISA-CAM";
 const char* PC_HOST_NAME = "Artyoms-MacBook";
 const unsigned long MDNS_TIMEOUT_MS = 2000;

@@ -4,7 +4,8 @@
 #include "CAM_1_Settings.h"
 #include "CAM_2_Configuration.h"
 #include "CAM_3_SendingFrames.h"
-#include "CAM_4_Monitor.h"
+#include "CAM_4_.h"
+
 
 void setup() {
   Serial.begin(BAUD_RATE);
@@ -25,13 +26,17 @@ void setup() {
 
     while (true) delay(HALT_DELAY_MS);
   }
+
+  establishUdpSocket();
 }
 
 
 void loop() {
   camera_fb_t* frame = captureFrame();
   if (frame) {
-    Serial.printf("[+] Frame size: %u bytes\n", frame->len);
+    if (!sendFrame(frame)) {
+      Serial.println("[loop] Frame send failed!");
+    }
     esp_camera_fb_return(frame);
   }
 }
