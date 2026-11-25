@@ -1,36 +1,7 @@
 #pragma once
+#include <Arduino.h>
 
-struct WifiNetwork { 
-  const char* ssid;
-  const char* pass;
-};
-
-
-const WifiNetwork NETWORKS[] = {
-  {"Amal-Student", "Amal1@st"},
-  {"MISA-NET", "03032007"},
-  {"Artyom Kiselhof’s iPhone", "03032007"},
-};
-
-
-const int NETWORKS_COUNT = sizeof(NETWORKS) / sizeof(NETWORKS[0]);
-
-const uint16_t PC_UDP_PORT = 5005;
-const size_t MAX_CHUNK_SIZE = 1400;
-const char* HOST_NAME = "MISA-CAM";
-const char* PC_HOST_NAME = "Artyoms-MacBook";
-const unsigned long MDNS_TIMEOUT_MS = 2000;
-const unsigned long WIFI_TIMEOUT_MS = 10000;
-const unsigned long WIFI_RETRY_MS = 500;
-
-
-const int TARGET_FPS = 20;
-
-
-const int BAUD_RATE = 115200;
-const int SERIAL_STARTUP_DELAY_MS = 1000;
-const int HALT_DELAY_MS = 1000;
-
+const int SERIAL_BAUD_RATE = 115200;
 
 const int XCLK_GPIO = 15;
 const int SIOD_GPIO = 4;
@@ -47,8 +18,22 @@ const int VSYNC_GPIO = 6;
 const int HREF_GPIO = 7;
 const int PCLK_GPIO = 13;
 
-
 const int PIN_NOT_USED = -1;
 const int XCLK_FREQ_HZ = 15000000;
-const int JPEG_QUALITY = 10;
+const int JPEG_QUALITY = 12;
 const int FRAME_BUFFER_COUNT = 2;
+
+const int LED_PIN = 48;
+const uint8_t LED_BRIGHTNESS = 40;
+
+const unsigned long LED_BLINK_FAST_MS = 200;
+const unsigned long LED_BLINK_SLOW_MS = 600;
+
+enum class CamState {
+  BOOT,
+  CAMERA_INIT,
+  WIFI_CONNECT,
+  WAIT_FOR_MAC,
+  STREAMING,
+  ERROR,
+};

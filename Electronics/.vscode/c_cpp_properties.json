@@ -1,0 +1,19 @@
+{
+  "configurations": [
+    {
+      "name": "ESP32-S3",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${env:HOME}/.arduino15/packages/esp32/**"
+      ],
+      "defines": [
+        "ARDUINO=10819",
+        "ARDUINO_ARCH_ESP32",
+        "ESP32",
+        "CONFIG_IDF_TARGET_ESP32S3=1"
+      ],
+      "cppStandard": "gnu++17"
+    }
+  ],
+  "version": 4
+}

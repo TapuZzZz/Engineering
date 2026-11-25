@@ -1,42 +1,16 @@
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#include "esp_camera.h"
+#include "CAM_0_Secrets.h"
 #include "CAM_1_Settings.h"
-#include "CAM_2_Configuration.h"
-#include "CAM_3_SendingFrames.h"
-#include "CAM_4_.h"
+#include "CAM_2_StatusLed.h"
+#include "CAM_3_Boot.h"
+#include "CAM_4_Camera.h"
+#include "CAM_5_Network.h"
+#include "CAM_6_SendingFrames.h"
 
 
 void setup() {
-  Serial.begin(BAUD_RATE);
-  delay(SERIAL_STARTUP_DELAY_MS);
-
-  if (!initCameraConfig()) {
-    Serial.println("=======================");
-    Serial.println("[!] Config init failed!");
-    Serial.println("=======================");
-
-    while (true) delay(HALT_DELAY_MS);
-  }
-
-  if (!initWiFiConnection()) {
-    Serial.println("=====================");
-    Serial.println("[!] WiFi init failed!");
-    Serial.println("=====================");
-
-    while (true) delay(HALT_DELAY_MS);
-  }
-
-  establishUdpSocket();
+  Serial.begin(SERIAL_BAUD_RATE);
 }
 
-
 void loop() {
-  camera_fb_t* frame = captureFrame();
-  if (frame) {
-    if (!sendFrame(frame)) {
-      Serial.println("[loop] Frame send failed!");
-    }
-    esp_camera_fb_return(frame);
-  }
+
 }
